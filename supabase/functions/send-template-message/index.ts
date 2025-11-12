@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const LIMITS = {
-  bodyParam: 1000,
+  bodyParam: 1024, // Aumentado para 1024
   titleText: 60,
   buttonText: 20,
 };
@@ -14,6 +14,16 @@ const LIMITS = {
 const URL_SHORTENER_BLOCKLIST = [
   'bit.ly', 'tinyurl.com', 'cutt.ly', 'goo.gl', 'ow.ly', 't.co', 'is.gd', 'buff.ly'
 ];
+
+function isBlockedShortener(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase().replace(/^www\./, '');
+    return URL_SHORTENER_BLOCKLIST.includes(hostname);
+  } catch {
+    return false;
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -94,11 +104,23 @@ Deno.serve(async (req) => {
         const btnParams = btn.vars.map((v: any) => {
           const varIndex = typeof v === 'number' ? v : v.index;
           const value = parameters[`button_${btn.index}_${varIndex}`] || '';
-          return { type: 'text', text: sanitizeUrlVar(value) };
+          const sanitized = sanitizeUrlVar(value);
+          
+          // Verificar se é encurtador bloqueado
+          if (sanitized && sanitized !== 'default' && isBlockedShortener(sanitized)) {
+            console.warn(`URL shortener bloqueado: ${sanitized}`);
+            return { type: 'text', text: 'default' };
+          }
+          
+          return { type: 'text', text: sanitized };
         });
 
         const hasEmpty = btnParams.some((p: any) => !p.text || p.text === 'default');
-        if (!hasEmpty) {
+        const omitIfEmpty = parameters[`button_${btn.index}_omitIfEmpty`] === true;
+        
+        if (hasEmpty && omitIfEmpty) {
+          console.log(`BUTTON[${btn.index}] omitido por falta de variável (omitIfEmpty=true)`);
+        } else if (!hasEmpty) {
           components.push({
             type: 'button',
             sub_type: 'url',
@@ -215,9 +237,16 @@ function buildParameter(type: string, value: any): any {
   }
 }
 
-function sanitizeParam(value: any): string {
+function sanitizeParam(value: any, preserveChar11 = false): string {
   let s = (value ?? 'N/A').toString();
-  s = s.replace(/[\r\n\t]/g, ' ');
+  
+  // Preservar CHAR(11) se solicitado (quebras do Excel Alt+Enter)
+  if (preserveChar11) {
+    s = s.replace(/[\r\n\t]/g, (match: string) => match === '\x0B' ? '\x0B' : ' ');
+  } else {
+    s = s.replace(/[\r\n\t]/g, ' ');
+  }
+  
   s = s.replace(/ {2,}/g, ' ');
   s = s.trim();
   if (s.length > LIMITS.bodyParam) s = s.slice(0, LIMITS.bodyParam - 1) + '…';
@@ -237,8 +266,20 @@ function sanitizeUrlVar(value: any): string {
 function normalizeMsisdn(raw: string): string {
   const digits = raw.replace(/\D/g, '');
   if (!digits) throw new Error('MSISDN vazio');
-  if (digits.startsWith('55') && digits.length >= 12 && digits.length <= 13) return digits;
-  if (digits.length >= 10 && digits.length <= 11) return '55' + digits;
-  if (!digits.startsWith('55') && digits.length >= 8) return digits;
-  throw new Error('MSISDN inválido');
+  
+  // Validação E.164 robusta
+  if (digits.startsWith('55') && digits.length >= 12 && digits.length <= 13) {
+    return digits; // Brasil
+  }
+  
+  if (digits.length >= 10 && digits.length <= 11) {
+    return '55' + digits; // Brasil sem DDI
+  }
+  
+  // Suporte a outros países (DDI internacional)
+  if (digits.length >= 8 && digits.length <= 15) {
+    return digits;
+  }
+  
+  throw new Error('MSISDN inválido: deve ter entre 8 e 15 dígitos');
 }

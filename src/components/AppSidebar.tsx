@@ -1,4 +1,4 @@
-import { Home, Phone, Send, List, MessageSquare, Users, FileText, Layers } from "lucide-react";
+import { Home, Phone, Send, List, MessageSquare, Users, FileText, Layers, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 
 import {
@@ -22,6 +22,7 @@ const items = [
   { title: "Campanhas", url: "/campanhas", icon: MessageSquare },
   { title: "Contatos", url: "/contatos", icon: Users },
   { title: "Mensagens", url: "/mensagens", icon: FileText },
+  { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 export function AppSidebar() {

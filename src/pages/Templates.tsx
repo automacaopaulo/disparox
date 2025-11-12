@@ -206,11 +206,18 @@ export default function Templates() {
 
           return (
             <Card key={template.id} className="relative">
+              {(template as any).auto_paused && (
+                <div className="absolute top-2 right-2">
+                  <Badge variant="destructive" className="text-xs">
+                    ⏸️ Auto-pausado
+                  </Badge>
+                </div>
+              )}
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg">{template.name}</CardTitle>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <Badge variant="outline">{getLanguageLabel(template.language)}</Badge>
                       <Badge
                         variant={template.status === "APPROVED" ? "default" : "secondary"}
@@ -219,6 +226,12 @@ export default function Templates() {
                       </Badge>
                       {varsCount > 0 && (
                         <Badge variant="secondary">{varsCount} variáveis</Badge>
+                      )}
+                      {structure?.body?.vars?.some((v: any) => v.type === 'currency') && (
+                        <Badge variant="outline">💰 Moeda</Badge>
+                      )}
+                      {structure?.body?.vars?.some((v: any) => v.type === 'date_time') && (
+                        <Badge variant="outline">📅 Data</Badge>
                       )}
                     </div>
                   </div>
@@ -246,39 +259,62 @@ export default function Templates() {
                 </div>
 
                 {/* Status e ações */}
-                <div className="flex items-center justify-between pt-4 border-t">
+                <div className="flex items-center justify-between pt-4 border-t gap-2">
                   <div className="flex items-center gap-2">
                     <Switch
-                      checked={template.is_active}
+                      checked={template.is_active && !(template as any).auto_paused}
                       onCheckedChange={(checked) =>
                         toggleActiveMutation.mutate({ id: template.id, isActive: checked })
                       }
                       id={`active-${template.id}`}
+                      disabled={(template as any).auto_paused}
                     />
                     <Label htmlFor={`active-${template.id}`} className="text-sm">
-                      {template.is_active ? "Ativo" : "Inativo"}
+                      {template.is_active && !(template as any).auto_paused ? "Ativo" : "Inativo"}
                     </Label>
                   </div>
 
-                  {varsCount > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setMappingTemplate(template)}
-                    >
-                      {hasMappings ? (
-                        <>
-                          <CheckCircle className="mr-1 h-3 w-3" />
-                          Editar Mapeamento
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="mr-1 h-3 w-3" />
-                          Criar Mapeamento
-                        </>
-                      )}
-                    </Button>
-                  )}
+                  <div className="flex gap-1">
+                    {(template as any).auto_paused && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          await supabase
+                            .from('templates')
+                            .update({ 
+                              auto_paused: false, 
+                              paused_at: null, 
+                              pause_reason: null 
+                            } as any)
+                            .eq('id', template.id);
+                          queryClient.invalidateQueries({ queryKey: ['templates'] });
+                          toast({ title: "Template reativado" });
+                        }}
+                      >
+                        Reativar
+                      </Button>
+                    )}
+                    {varsCount > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMappingTemplate(template)}
+                      >
+                        {hasMappings ? (
+                          <>
+                            <CheckCircle className="mr-1 h-3 w-3" />
+                            Editar
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="mr-1 h-3 w-3" />
+                            Mapear
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

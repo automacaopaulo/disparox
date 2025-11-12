@@ -7,6 +7,7 @@ import { Plus, Pencil, Trash2, Power, PowerOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { WhatsAppNumberDialog } from "@/components/WhatsAppNumberDialog";
+import { QualityRatingBadge } from "@/components/QualityRatingBadge";
 
 interface WhatsAppNumber {
   id: string;
@@ -20,6 +21,7 @@ interface WhatsAppNumber {
   quality_rating: string | null;
   is_active: boolean;
   created_at: string;
+  updated_at?: string;
 }
 
 export default function WhatsAppNumbers() {
@@ -149,12 +151,10 @@ export default function WhatsAppNumbers() {
                       {number.phone_number || number.phone_number_id}
                     </CardDescription>
                   </div>
-                  <Badge 
-                    variant="outline" 
-                    className={getQualityColor(number.quality_rating)}
-                  >
-                    {number.quality_rating || "N/A"}
-                  </Badge>
+                  <QualityRatingBadge 
+                    rating={number.quality_rating} 
+                    updatedAt={number.updated_at}
+                  />
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
