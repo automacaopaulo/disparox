@@ -11,6 +11,22 @@ import { format } from "date-fns";
 export default function Mensagens() {
   const [searchQuery, setSearchQuery] = useState("");
   const [directionFilter, setDirectionFilter] = useState("all");
+  const [selectedNumber, setSelectedNumber] = useState("all");
+
+  // Buscar números WhatsApp cadastrados
+  const { data: whatsappNumbers } = useQuery({
+    queryKey: ["whatsapp_numbers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("whatsapp_numbers")
+        .select("id, display_name, phone_number_id")
+        .eq("is_active", true)
+        .order("display_name");
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const { data: messages, isLoading } = useQuery({
     queryKey: ["messages"],
@@ -51,6 +67,15 @@ export default function Mensagens() {
       if (searchQuery && !conv.msisdn.includes(searchQuery)) return false;
       if (directionFilter === "inbound" && !conv.hasInbound) return false;
       if (directionFilter === "outbound" && conv.hasInbound) return false;
+      
+      // Filtrar por número WhatsApp selecionado
+      if (selectedNumber !== "all") {
+        const hasMessageFromNumber = conv.messages.some(
+          (msg: any) => msg.whatsapp_number_id === selectedNumber
+        );
+        if (!hasMessageFromNumber) return false;
+      }
+      
       return true;
     });
 
@@ -101,7 +126,7 @@ export default function Mensagens() {
       {/* Filtros */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -120,6 +145,20 @@ export default function Mensagens() {
                 <SelectItem value="all">Todas as Conversas</SelectItem>
                 <SelectItem value="inbound">📩 Conversas com Respostas (Leads)</SelectItem>
                 <SelectItem value="outbound">📤 Apenas Enviadas</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedNumber} onValueChange={setSelectedNumber}>
+              <SelectTrigger>
+                <SelectValue placeholder="Número WhatsApp" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">📱 Todos os Números</SelectItem>
+                {whatsappNumbers?.map((num) => (
+                  <SelectItem key={num.id} value={num.id}>
+                    {num.display_name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
