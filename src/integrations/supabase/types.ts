@@ -105,6 +105,7 @@ export type Database = {
           template_name: string | null
           total_items: number | null
           updated_at: string | null
+          whatsapp_number_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -119,6 +120,7 @@ export type Database = {
           template_name?: string | null
           total_items?: number | null
           updated_at?: string | null
+          whatsapp_number_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -133,8 +135,17 @@ export type Database = {
           template_name?: string | null
           total_items?: number | null
           updated_at?: string | null
+          whatsapp_number_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_whatsapp_number_id_fkey"
+            columns: ["whatsapp_number_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contacts: {
         Row: {
@@ -205,6 +216,7 @@ export type Database = {
           status: string | null
           template_name: string | null
           updated_at: string | null
+          whatsapp_number_id: string | null
         }
         Insert: {
           content?: Json | null
@@ -220,6 +232,7 @@ export type Database = {
           status?: string | null
           template_name?: string | null
           updated_at?: string | null
+          whatsapp_number_id?: string | null
         }
         Update: {
           content?: Json | null
@@ -235,8 +248,17 @@ export type Database = {
           status?: string | null
           template_name?: string | null
           updated_at?: string | null
+          whatsapp_number_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messages_whatsapp_number_id_fkey"
+            columns: ["whatsapp_number_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       webhook_events: {
         Row: {
@@ -262,6 +284,51 @@ export type Database = {
           message_id?: string | null
           processed?: boolean | null
           raw?: Json
+        }
+        Relationships: []
+      }
+      whatsapp_numbers: {
+        Row: {
+          access_token: string
+          business_account_id: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          phone_number: string | null
+          phone_number_id: string
+          quality_rating: string | null
+          updated_at: string
+          waba_id: string
+        }
+        Insert: {
+          access_token: string
+          business_account_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone_number?: string | null
+          phone_number_id: string
+          quality_rating?: string | null
+          updated_at?: string
+          waba_id: string
+        }
+        Update: {
+          access_token?: string
+          business_account_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone_number?: string | null
+          phone_number_id?: string
+          quality_rating?: string | null
+          updated_at?: string
+          waba_id?: string
         }
         Relationships: []
       }
