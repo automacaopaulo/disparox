@@ -1,4 +1,4 @@
-import { Home, Phone, Send, List, MessageSquare, Users, Settings } from "lucide-react";
+import { Home, Phone, Send, List, MessageSquare, Users, FileText, Layers } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 
 import {
@@ -16,11 +16,12 @@ import {
 const items = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Números WhatsApp", url: "/numeros", icon: Phone },
+  { title: "Templates", url: "/templates", icon: Layers },
   { title: "Disparo 1:1", url: "/disparo-single", icon: Send },
   { title: "Disparo CSV", url: "/disparo-csv", icon: List },
   { title: "Campanhas", url: "/campanhas", icon: MessageSquare },
   { title: "Contatos", url: "/contatos", icon: Users },
-  { title: "Mensagens", url: "/mensagens", icon: MessageSquare },
+  { title: "Mensagens", url: "/mensagens", icon: FileText },
 ];
 
 export function AppSidebar() {
