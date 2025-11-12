@@ -94,11 +94,14 @@ export type Database = {
       campaigns: {
         Row: {
           created_at: string | null
+          csv_file_url: string | null
           delivered: number | null
+          error_summary: Json | null
           failed: number | null
           id: string
           language: string | null
           name: string
+          processing_rate: number | null
           read: number | null
           sent: number | null
           status: string | null
@@ -109,11 +112,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          csv_file_url?: string | null
           delivered?: number | null
+          error_summary?: Json | null
           failed?: number | null
           id?: string
           language?: string | null
           name: string
+          processing_rate?: number | null
           read?: number | null
           sent?: number | null
           status?: string | null
@@ -124,11 +130,14 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          csv_file_url?: string | null
           delivered?: number | null
+          error_summary?: Json | null
           failed?: number | null
           id?: string
           language?: string | null
           name?: string
+          processing_rate?: number | null
           read?: number | null
           sent?: number | null
           status?: string | null
@@ -253,6 +262,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "messages_whatsapp_number_id_fkey"
+            columns: ["whatsapp_number_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      templates: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          language: string
+          mappings: Json
+          name: string
+          status: string
+          structure: Json
+          updated_at: string | null
+          whatsapp_number_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string
+          mappings?: Json
+          name: string
+          status?: string
+          structure?: Json
+          updated_at?: string | null
+          whatsapp_number_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string
+          mappings?: Json
+          name?: string
+          status?: string
+          structure?: Json
+          updated_at?: string | null
+          whatsapp_number_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "templates_whatsapp_number_id_fkey"
             columns: ["whatsapp_number_id"]
             isOneToOne: false
             referencedRelation: "whatsapp_numbers"
