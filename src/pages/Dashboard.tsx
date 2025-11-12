@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Phone, Send, CheckCircle, XCircle, AlertCircle, TrendingUp, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { LineChart, Line, PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 export default function Dashboard() {
   const { data: stats } = useQuery({
@@ -47,8 +49,41 @@ export default function Dashboard() {
         new Date(m.created_at) >= today
       ).length || 0;
 
+      // Dados para gráficos - últimos 7 dias
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (6 - i));
+        date.setHours(0, 0, 0, 0);
+        return date;
+      });
+
+      const messagesPerDay = last7Days.map(date => {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        const count = messagesRes.data?.filter(m => {
+          const msgDate = new Date(m.created_at);
+          return msgDate >= date && msgDate < nextDay;
+        }).length || 0;
+
+        return {
+          day: date.toLocaleDateString('pt-BR', { weekday: 'short' }),
+          mensagens: count,
+        };
+      });
+
+      // Gráfico de pizza - distribuição de status
+      const statusDistribution = [
+        { name: 'Enviados', value: totalSent, color: '#10b981' },
+        { name: 'Entregues', value: totalDelivered, color: '#3b82f6' },
+        { name: 'Lidos', value: totalRead, color: '#8b5cf6' },
+        { name: 'Falhas', value: totalFailed, color: '#ef4444' },
+      ].filter(item => item.value > 0);
+
       return {
         activeNumbers,
+        messagesPerDay,
+        statusDistribution,
         totalNumbers,
         lowQualityNumbers,
         campaignsActive,
@@ -191,6 +226,55 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground mt-1">
               {stats?.totalRead || 0} lidas
             </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Gráficos */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Gráfico de Linha - Mensagens por Dia */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Mensagens - Últimos 7 Dias</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={stats?.messagesPerDay || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="mensagens" stroke="hsl(var(--primary))" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Gráfico de Pizza - Distribuição de Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Distribuição de Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={stats?.statusDistribution || []}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={(entry) => entry.name}
+                  outerRadius={70}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {stats?.statusDistribution?.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>

@@ -22,6 +22,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface TemplateMappingDialogProps {
   template: any;
@@ -105,7 +106,7 @@ export function TemplateMappingDialog({
     },
   });
 
-  const updateMapping = (varKey: string, field: string, value: string) => {
+  const updateMapping = (varKey: string, field: string, value: string | boolean) => {
     setMappings((prev: any) => ({
       ...prev,
       [varKey]: {
@@ -136,9 +137,61 @@ export function TemplateMappingDialog({
             </p>
           </div>
 
+          {/* Header Media URL (se o header for imagem/vídeo/doc) */}
+          {structure.header?.format && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(structure.header.format) && (
+            <div className="space-y-2 border-b pb-4 bg-blue-50 p-3 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Label className="font-medium">Header Media URL</Label>
+                <Badge variant="secondary" className="text-xs">
+                  {structure.header.format === 'IMAGE' && '🖼️ Imagem'}
+                  {structure.header.format === 'VIDEO' && '🎥 Vídeo'}
+                  {structure.header.format === 'DOCUMENT' && '📄 Documento'}
+                </Badge>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Tipo</Label>
+                  <Select
+                    value={mappings.header_media?.type || "column"}
+                    onValueChange={(value) => updateMapping("header_media", "type", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="column">Coluna do CSV</SelectItem>
+                      <SelectItem value="fixed">URL Fixa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">
+                    {mappings.header_media?.type === "column" ? "Nome da Coluna" : "URL"}
+                  </Label>
+                  <Input
+                    placeholder={
+                      mappings.header_media?.type === "column"
+                        ? "Ex: imagem_url, foto, link..."
+                        : "https://exemplo.com/imagem.jpg"
+                    }
+                    value={mappings.header_media?.value || ""}
+                    onChange={(e) => updateMapping("header_media", "value", e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                🔗 A URL deve apontar para um arquivo acessível publicamente
+              </p>
+            </div>
+          )}
+
           {allVariables.map((variable) => {
             const varKey = `${variable.type}_${variable.index}`;
             const mapping = mappings[varKey] || { type: "column", value: "" };
+            const isButtonVar = variable.type.startsWith('button_');
 
             return (
               <div key={varKey} className="space-y-2 border-b pb-4">
@@ -191,6 +244,20 @@ export function TemplateMappingDialog({
                     />
                   </div>
                 </div>
+
+                {/* omitIfEmpty para variáveis de botão */}
+                {isButtonVar && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <Checkbox
+                      id={`omit-${varKey}`}
+                      checked={mapping.omitIfEmpty || false}
+                      onCheckedChange={(checked) => updateMapping(varKey, "omitIfEmpty", checked)}
+                    />
+                    <Label htmlFor={`omit-${varKey}`} className="text-xs cursor-pointer">
+                      Omitir botão se variável estiver vazia (evita links quebrados)
+                    </Label>
+                  </div>
+                )}
 
                 {mapping.type === "column" && (
                   <p className="text-xs text-muted-foreground">

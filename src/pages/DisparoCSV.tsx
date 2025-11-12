@@ -24,7 +24,7 @@ export default function DisparoCSV() {
   const [csvData, setCsvData] = useState<any[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [selectedNumber, setSelectedNumber] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
   const [rate, setRate] = useState(40);
   const [campaignName, setCampaignName] = useState("");
 
@@ -94,25 +94,45 @@ export default function DisparoCSV() {
 
   const createCampaignMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedNumber || !selectedTemplate || csvData.length === 0) {
+      if (!selectedNumber || selectedTemplates.length === 0 || csvData.length === 0) {
         throw new Error("Dados incompletos");
       }
 
-      const template = templates?.find(t => t.id === selectedTemplate);
-      if (!template) throw new Error("Template não encontrado");
+      const selectedTemplateObjs = templates?.filter(t => selectedTemplates.includes(t.id)) || [];
+      if (selectedTemplateObjs.length === 0) throw new Error("Templates não encontrados");
 
-      // Criar campanha
+      // Upload CSV para Storage
+      let csvUrl = null;
+      if (csvFile) {
+        const fileName = `${Date.now()}_${csvFile.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('campaign-csvs')
+          .upload(fileName, csvFile);
+
+        if (uploadError) {
+          console.warn("Erro ao fazer upload do CSV:", uploadError);
+        } else {
+          const { data: urlData } = supabase.storage
+            .from('campaign-csvs')
+            .getPublicUrl(fileName);
+          csvUrl = urlData.publicUrl;
+        }
+      }
+
+      // Criar campanha com múltiplos templates
+      const templateNames = selectedTemplateObjs.map(t => t.name);
       const { data: campaign, error: campaignError } = await supabase
         .from("campaigns")
         .insert({
           name: campaignName || `Campanha ${new Date().toLocaleString()}`,
           whatsapp_number_id: selectedNumber,
-          template_name: template.name,
-          language: template.language,
+          template_name: templateNames[0], // Template principal
+          language: selectedTemplateObjs[0].language,
           total_items: csvData.length,
           status: "pending",
           processing_rate: rate,
-        })
+          csv_file_url: csvUrl,
+        } as any)
         .select()
         .single();
 
@@ -121,7 +141,7 @@ export default function DisparoCSV() {
       // Criar items
       const items = csvData.map(row => {
         const params: any = {};
-        const mappings = template.mappings || {};
+        const mappings = selectedTemplateObjs[0].mappings || {};
 
         // Aplicar mapeamentos
         Object.keys(mappings).forEach(varKey => {
@@ -167,7 +187,7 @@ export default function DisparoCSV() {
       setCsvData([]);
       setHeaders([]);
       setSelectedNumber("");
-      setSelectedTemplate("");
+      setSelectedTemplates([]);
       setCampaignName("");
     },
     onError: (error: any) => {
@@ -179,9 +199,10 @@ export default function DisparoCSV() {
     },
   });
 
-  const selectedTemplateData = templates?.find(t => t.id === selectedTemplate);
-  const hasMappings = selectedTemplateData?.mappings && 
-    Object.keys(selectedTemplateData.mappings).length > 0;
+  const selectedTemplateObjs = templates?.filter(t => selectedTemplates.includes(t.id)) || [];
+  const allHaveMappings = selectedTemplateObjs.every(t => 
+    t.mappings && Object.keys(t.mappings).length > 0
+  );
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -311,26 +332,41 @@ export default function DisparoCSV() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="template">Template *</Label>
-              <Select
-                value={selectedTemplate}
-                onValueChange={setSelectedTemplate}
-                disabled={!selectedNumber}
-              >
-                <SelectTrigger id="template">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {templates?.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
+              <Label htmlFor="templates">Templates * (múltiplos para fallback)</Label>
+              <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto">
+                {templates?.map((template) => (
+                  <div key={template.id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id={`template-${template.id}`}
+                      checked={selectedTemplates.includes(template.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedTemplates([...selectedTemplates, template.id]);
+                        } else {
+                          setSelectedTemplates(selectedTemplates.filter(id => id !== template.id));
+                        }
+                      }}
+                      disabled={!selectedNumber}
+                      className="cursor-pointer"
+                    />
+                    <label htmlFor={`template-${template.id}`} className="text-sm cursor-pointer flex-1">
                       {template.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedTemplate && !hasMappings && (
+                      {selectedTemplates.includes(template.id) && (
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          #{selectedTemplates.indexOf(template.id) + 1}
+                        </Badge>
+                      )}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                💡 Selecione múltiplos templates. Se o 1º falhar (pausado), tentará o 2º automaticamente.
+              </p>
+              {selectedTemplates.length > 0 && !allHaveMappings && (
                 <p className="text-sm text-yellow-600">
-                  ⚠️ Este template não tem mapeamento configurado. Configure em Templates.
+                  ⚠️ Alguns templates não têm mapeamento configurado. Configure em Templates.
                 </p>
               )}
             </div>
@@ -356,7 +392,7 @@ export default function DisparoCSV() {
               </Button>
               <Button 
                 onClick={() => setStep(3)} 
-                disabled={!selectedNumber || !selectedTemplate}
+                disabled={!selectedNumber || selectedTemplates.length === 0}
                 className="flex-1"
               >
                 Próximo: Revisar
@@ -380,8 +416,14 @@ export default function DisparoCSV() {
                 <span>{campaignName || "Sem nome"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-medium">Template:</span>
-                <span>{selectedTemplateData?.name}</span>
+                <span className="font-medium">Templates:</span>
+                <div className="text-right">
+                  {selectedTemplateObjs.map((t, idx) => (
+                    <div key={t.id}>
+                      {idx + 1}. {t.name}
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">Total de envios:</span>
@@ -397,9 +439,9 @@ export default function DisparoCSV() {
               </div>
             </div>
 
-            {!hasMappings && (
+            {!allHaveMappings && (
               <div className="bg-yellow-50 border border-yellow-200 p-3 rounded text-sm text-yellow-800">
-                ⚠️ O template selecionado não possui mapeamento. As variáveis não serão preenchidas.
+                ⚠️ Alguns templates não possuem mapeamento. As variáveis podem não ser preenchidas.
               </div>
             )}
 

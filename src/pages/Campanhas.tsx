@@ -12,11 +12,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MessageSquare, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { MessageSquare, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+import { ReprocessFailuresDialog } from "@/components/ReprocessFailuresDialog";
 
 export default function Campanhas() {
   const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
+  const [reprocessDialogOpen, setReprocessDialogOpen] = useState(false);
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ["campaigns"],
@@ -196,11 +199,19 @@ export default function Campanhas() {
 
       {/* Dialog de detalhes */}
       {selectedCampaign && (
-        <CampaignDetailsDialog
-          campaign={selectedCampaign}
-          open={!!selectedCampaign}
-          onOpenChange={(open) => !open && setSelectedCampaign(null)}
-        />
+        <>
+          <CampaignDetailsDialog
+            campaign={selectedCampaign}
+            open={!!selectedCampaign}
+            onOpenChange={(open) => !open && setSelectedCampaign(null)}
+            onReprocess={() => setReprocessDialogOpen(true)}
+          />
+          <ReprocessFailuresDialog
+            campaign={selectedCampaign}
+            open={reprocessDialogOpen}
+            onOpenChange={setReprocessDialogOpen}
+          />
+        </>
       )}
     </div>
   );
@@ -210,10 +221,12 @@ function CampaignDetailsDialog({
   campaign,
   open,
   onOpenChange,
+  onReprocess,
 }: {
   campaign: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onReprocess: () => void;
 }) {
   const { data: items } = useQuery({
     queryKey: ["campaign-items", campaign.id],
@@ -234,11 +247,32 @@ function CampaignDetailsDialog({
   const errorSummary = campaign.error_summary || {};
   const errorEntries = Object.entries(errorSummary);
 
+  // Preparar dados para o gráfico de erros
+  const errorChartData = errorEntries.map(([code, count]) => ({
+    code: `Erro ${code}`,
+    quantidade: Number(count),
+  }));
+
+  const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16'];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{campaign.name}</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            <span>{campaign.name}</span>
+            {campaign.failed > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onReprocess}
+                className="ml-4"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reprocessar Falhas
+              </Button>
+            )}
+          </DialogTitle>
           <DialogDescription>
             Detalhes completos da campanha
           </DialogDescription>
@@ -276,16 +310,30 @@ function CampaignDetailsDialog({
             </CardContent>
           </Card>
 
-          {/* Resumo de erros */}
+          {/* Gráfico de Erros */}
           {errorEntries.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <AlertCircle className="h-5 w-5 text-yellow-600" />
-                  Resumo de Erros
+                  Análise de Erros
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={errorChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="code" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="quantidade" fill="hsl(var(--destructive))">
+                      {errorChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+
                 <div className="space-y-2">
                   {errorEntries.map(([code, count]) => (
                     <div
