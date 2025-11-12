@@ -61,9 +61,11 @@ Deno.serve(async (req) => {
     // HEADER
     if (structure.header?.format) {
       if (structure.header.format === 'TEXT' && structure.header.vars.length > 0) {
-        const params = structure.header.vars.map((n: number) => {
-          const value = parameters[`header_${n}`] || 'N/A';
-          return { type: 'text', text: sanitizeParam(value) };
+        const params = structure.header.vars.map((v: any) => {
+          const varIndex = typeof v === 'number' ? v : v.index;
+          const varType = typeof v === 'object' ? v.type : 'text';
+          const value = parameters[`header_${varIndex}`] || 'N/A';
+          return buildParameter(varType, value);
         });
         components.push({ type: 'header', parameters: params });
       } else if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(structure.header.format)) {
@@ -77,9 +79,11 @@ Deno.serve(async (req) => {
 
     // BODY
     if (structure.body?.vars.length > 0) {
-      const params = structure.body.vars.map((n: number) => {
-        const value = parameters[`body_${n}`] || 'N/A';
-        return { type: 'text', text: sanitizeParam(value) };
+      const params = structure.body.vars.map((v: any) => {
+        const varIndex = typeof v === 'number' ? v : v.index;
+        const varType = typeof v === 'object' ? v.type : 'text';
+        const value = parameters[`body_${varIndex}`] || 'N/A';
+        return buildParameter(varType, value);
       });
       components.push({ type: 'body', parameters: params });
     }
@@ -87,8 +91,9 @@ Deno.serve(async (req) => {
     // BUTTONS
     for (const btn of structure.buttons || []) {
       if (btn.type === 'URL' && btn.hasVars) {
-        const btnParams = btn.vars.map((n: number) => {
-          const value = parameters[`button_${btn.index}_${n}`] || '';
+        const btnParams = btn.vars.map((v: any) => {
+          const varIndex = typeof v === 'number' ? v : v.index;
+          const value = parameters[`button_${btn.index}_${varIndex}`] || '';
           return { type: 'text', text: sanitizeUrlVar(value) };
         });
 
@@ -180,7 +185,36 @@ Deno.serve(async (req) => {
   }
 });
 
-// Funções de sanitização
+// Funções de sanitização e construção de parâmetros
+function buildParameter(type: string, value: any): any {
+  switch (type) {
+    case 'currency':
+      // Formato: { type: "currency", currency: { fallback_value: "R$ 10,00", code: "BRL", amount_1000: 10000 } }
+      const amount = parseFloat(String(value).replace(/[^\d.-]/g, '')) || 0;
+      return {
+        type: 'currency',
+        currency: {
+          fallback_value: sanitizeParam(value),
+          code: 'BRL',
+          amount_1000: Math.round(amount * 1000),
+        },
+      };
+    
+    case 'date_time':
+      // Formato: { type: "date_time", date_time: { fallback_value: "01/01/2024" } }
+      return {
+        type: 'date_time',
+        date_time: {
+          fallback_value: sanitizeParam(value),
+        },
+      };
+    
+    case 'text':
+    default:
+      return { type: 'text', text: sanitizeParam(value) };
+  }
+}
+
 function sanitizeParam(value: any): string {
   let s = (value ?? 'N/A').toString();
   s = s.replace(/[\r\n\t]/g, ' ');

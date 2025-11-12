@@ -184,7 +184,7 @@ function analyzeTemplate(tpl: Template) {
 
     if (type === 'body') {
       const text = c.text || '';
-      const vars = extractVariables(text);
+      const vars = extractVariablesWithTypes(text, c.example);
       structure.body.text = text;
       structure.body.vars = vars;
     } else if (type === 'header') {
@@ -193,12 +193,12 @@ function analyzeTemplate(tpl: Template) {
 
       if (format === 'TEXT') {
         const text = c.text || '';
-        const vars = extractVariables(text);
+        const vars = extractVariablesWithTypes(text, c.example);
         structure.header.text = text;
         structure.header.vars = vars;
-      } else {
+      } else if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(format)) {
         structure.header.text = c.text || null;
-        structure.header.vars = c.example ? [1] : [];
+        structure.header.vars = c.example ? [{ index: 1, type: format.toLowerCase() }] : [];
       }
     } else if (type === 'buttons') {
       (c.buttons || []).forEach((b: any, idx: number) => {
@@ -214,7 +214,7 @@ function analyzeTemplate(tpl: Template) {
 
         if (btype === 'URL') {
           const url = b.url || '';
-          const vars = extractVariables(url);
+          const vars = extractVariablesWithTypes(url, b.example);
           rec.hasVars = vars.length > 0;
           rec.vars = vars;
           rec.urlPattern = url;
@@ -228,8 +228,29 @@ function analyzeTemplate(tpl: Template) {
   return structure;
 }
 
-function extractVariables(text: string): number[] {
+function extractVariablesWithTypes(text: string, example?: any): any[] {
   const matches = text.match(/{{\d+}}/g) || [];
-  const vars = matches.map((m) => Number(m.replace(/[{}]/g, '')));
-  return Array.from(new Set(vars)).sort((a, b) => a - b);
+  const varIndices = matches.map((m) => Number(m.replace(/[{}]/g, '')));
+  const uniqueIndices = Array.from(new Set(varIndices)).sort((a, b) => a - b);
+
+  // Detectar tipos dos exemplos se disponíveis
+  const exampleValues = example?.body_text?.[0] || example?.header_text?.[0] || [];
+  
+  return uniqueIndices.map((index) => {
+    const exampleValue = exampleValues[index - 1];
+    let varType = 'text'; // padrão
+
+    // Tentar detectar tipo baseado no exemplo
+    if (exampleValue) {
+      if (typeof exampleValue === 'object') {
+        if (exampleValue.currency) {
+          varType = 'currency';
+        } else if (exampleValue.date_time) {
+          varType = 'date_time';
+        }
+      }
+    }
+
+    return { index, type: varType };
+  });
 }

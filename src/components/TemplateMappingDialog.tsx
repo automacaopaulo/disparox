@@ -39,23 +39,42 @@ export function TemplateMappingDialog({
   const [mappings, setMappings] = useState<any>(template.mappings || {});
 
   const structure = template.structure;
-  const allVariables: { type: string; index: number; label: string }[] = [];
+  const allVariables: { type: string; index: number; label: string; varType: string }[] = [];
 
-  // Coletar todas as variáveis
-  structure.body?.vars?.forEach((n: number) => {
-    allVariables.push({ type: "body", index: n, label: `Body {{${n}}}` });
+  // Coletar todas as variáveis do body
+  structure.body?.vars?.forEach((v: any) => {
+    const varIndex = typeof v === 'number' ? v : v.index;
+    const varType = typeof v === 'object' ? v.type : 'text';
+    allVariables.push({ 
+      type: "body", 
+      index: varIndex, 
+      label: `Body {{${varIndex}}}`,
+      varType 
+    });
   });
 
-  structure.header?.vars?.forEach((n: number) => {
-    allVariables.push({ type: "header", index: n, label: `Header {{${n}}}` });
+  // Coletar todas as variáveis do header
+  structure.header?.vars?.forEach((v: any) => {
+    const varIndex = typeof v === 'number' ? v : v.index;
+    const varType = typeof v === 'object' ? v.type : 'text';
+    allVariables.push({ 
+      type: "header", 
+      index: varIndex, 
+      label: `Header {{${varIndex}}}`,
+      varType 
+    });
   });
 
+  // Coletar todas as variáveis dos botões
   structure.buttons?.forEach((btn: any) => {
-    btn.vars?.forEach((n: number) => {
+    btn.vars?.forEach((v: any) => {
+      const varIndex = typeof v === 'number' ? v : v.index;
+      const varType = typeof v === 'object' ? v.type : 'text';
       allVariables.push({
         type: `button_${btn.index}`,
-        index: n,
-        label: `Button ${btn.index} {{${n}}}`,
+        index: varIndex,
+        label: `Button ${btn.index} {{${varIndex}}}`,
+        varType
       });
     });
   });
@@ -123,7 +142,14 @@ export function TemplateMappingDialog({
 
             return (
               <div key={varKey} className="space-y-2 border-b pb-4">
-                <Label className="font-medium">{variable.label}</Label>
+                <div className="flex items-center gap-2">
+                  <Label className="font-medium">{variable.label}</Label>
+                  <Badge variant="secondary" className="text-xs">
+                    {variable.varType === 'currency' && '💰 Moeda'}
+                    {variable.varType === 'date_time' && '📅 Data/Hora'}
+                    {variable.varType === 'text' && '📝 Texto'}
+                  </Badge>
+                </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -149,7 +175,15 @@ export function TemplateMappingDialog({
                     <Input
                       placeholder={
                         mapping.type === "column"
-                          ? "Ex: nome, telefone, empresa..."
+                          ? variable.varType === 'currency' 
+                            ? "Ex: valor, preco, total..."
+                            : variable.varType === 'date_time'
+                            ? "Ex: data, prazo, vencimento..."
+                            : "Ex: nome, telefone, empresa..."
+                          : variable.varType === 'currency'
+                          ? "Ex: R$ 100,00"
+                          : variable.varType === 'date_time'
+                          ? "Ex: 01/01/2024"
                           : "Digite o valor fixo..."
                       }
                       value={mapping.value || ""}
@@ -161,6 +195,18 @@ export function TemplateMappingDialog({
                 {mapping.type === "column" && (
                   <p className="text-xs text-muted-foreground">
                     💡 O nome deve corresponder exatamente ao cabeçalho da coluna no CSV
+                  </p>
+                )}
+                
+                {variable.varType === 'currency' && (
+                  <p className="text-xs text-muted-foreground">
+                    💰 Para moeda, use formato: R$ 100,00 ou apenas números
+                  </p>
+                )}
+                
+                {variable.varType === 'date_time' && (
+                  <p className="text-xs text-muted-foreground">
+                    📅 Para data, use formato: DD/MM/YYYY ou qualquer formato de data
                   </p>
                 )}
               </div>

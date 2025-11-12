@@ -114,6 +114,18 @@ export default function Templates() {
     return bodyVars + headerVars + buttonVars;
   };
 
+  const getLanguageLabel = (lang: string) => {
+    const languages: Record<string, string> = {
+      'pt_BR': '🇧🇷 Português',
+      'en_US': '🇺🇸 Inglês',
+      'es_ES': '🇪🇸 Espanhol',
+      'en': '🇺🇸 Inglês',
+      'pt': '🇧🇷 Português',
+      'es': '🇪🇸 Espanhol',
+    };
+    return languages[lang] || lang;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start">
@@ -199,7 +211,7 @@ export default function Templates() {
                   <div className="flex-1">
                     <CardTitle className="text-lg">{template.name}</CardTitle>
                     <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="outline">{template.language}</Badge>
+                      <Badge variant="outline">{getLanguageLabel(template.language)}</Badge>
                       <Badge
                         variant={template.status === "APPROVED" ? "default" : "secondary"}
                       >
