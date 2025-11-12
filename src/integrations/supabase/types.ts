@@ -38,6 +38,36 @@ export type Database = {
         }
         Relationships: []
       }
+      audiences: {
+        Row: {
+          contact_count: number | null
+          created_at: string | null
+          description: string | null
+          filters: Json
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          contact_count?: number | null
+          created_at?: string | null
+          description?: string | null
+          filters?: Json
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          contact_count?: number | null
+          created_at?: string | null
+          description?: string | null
+          filters?: Json
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       campaign_items: {
         Row: {
           campaign_id: string | null
@@ -162,6 +192,146 @@ export type Database = {
           },
         ]
       }
+      chatbot_config: {
+        Row: {
+          auto_reply_delay_seconds: number | null
+          business_hours_end: string | null
+          business_hours_only: boolean | null
+          business_hours_start: string | null
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          max_tokens: number | null
+          model: string
+          out_of_hours_message: string | null
+          system_prompt: string
+          temperature: number | null
+          updated_at: string | null
+          whatsapp_number_id: string | null
+        }
+        Insert: {
+          auto_reply_delay_seconds?: number | null
+          business_hours_end?: string | null
+          business_hours_only?: boolean | null
+          business_hours_start?: string | null
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          max_tokens?: number | null
+          model?: string
+          out_of_hours_message?: string | null
+          system_prompt?: string
+          temperature?: number | null
+          updated_at?: string | null
+          whatsapp_number_id?: string | null
+        }
+        Update: {
+          auto_reply_delay_seconds?: number | null
+          business_hours_end?: string | null
+          business_hours_only?: boolean | null
+          business_hours_start?: string | null
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          max_tokens?: number | null
+          model?: string
+          out_of_hours_message?: string | null
+          system_prompt?: string
+          temperature?: number | null
+          updated_at?: string | null
+          whatsapp_number_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_config_whatsapp_number_id_fkey"
+            columns: ["whatsapp_number_id"]
+            isOneToOne: true
+            referencedRelation: "whatsapp_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chatbot_conversations: {
+        Row: {
+          contact_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_message_at: string | null
+          messages: Json
+          whatsapp_number_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_message_at?: string | null
+          messages?: Json
+          whatsapp_number_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_message_at?: string | null
+          messages?: Json
+          whatsapp_number_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chatbot_conversations_whatsapp_number_id_fkey"
+            columns: ["whatsapp_number_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_tags: {
+        Row: {
+          contact_id: string
+          created_at: string | null
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string | null
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string | null
+          id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_tags_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           cpf: string | null
@@ -200,6 +370,107 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      flow_executions: {
+        Row: {
+          completed_at: string | null
+          contact_id: string
+          context: Json | null
+          current_node_id: string | null
+          error_message: string | null
+          flow_id: string
+          id: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          contact_id: string
+          context?: Json | null
+          current_node_id?: string | null
+          error_message?: string | null
+          flow_id: string
+          id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          contact_id?: string
+          context?: Json | null
+          current_node_id?: string | null
+          error_message?: string | null
+          flow_id?: string
+          id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_executions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_executions_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flows: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          edges: Json
+          id: string
+          is_active: boolean | null
+          name: string
+          nodes: Json
+          trigger_keyword: string | null
+          trigger_type: string
+          updated_at: string | null
+          whatsapp_number_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          edges?: Json
+          id?: string
+          is_active?: boolean | null
+          name: string
+          nodes?: Json
+          trigger_keyword?: string | null
+          trigger_type: string
+          updated_at?: string | null
+          whatsapp_number_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          edges?: Json
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          nodes?: Json
+          trigger_keyword?: string | null
+          trigger_type?: string
+          updated_at?: string | null
+          whatsapp_number_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flows_whatsapp_number_id_fkey"
+            columns: ["whatsapp_number_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       logs: {
         Row: {
@@ -283,6 +554,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tags: {
+        Row: {
+          color: string
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       templates: {
         Row: {
