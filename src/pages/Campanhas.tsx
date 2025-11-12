@@ -12,14 +12,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MessageSquare, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { MessageSquare, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Search, Filter, Download } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 import { ReprocessFailuresDialog } from "@/components/ReprocessFailuresDialog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Campanhas() {
   const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
   const [reprocessDialogOpen, setReprocessDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("all");
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ["campaigns"],
@@ -56,6 +62,72 @@ export default function Campanhas() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const { toast } = useToast();
+
+  // Filtrar campanhas
+  const filteredCampaigns = campaigns?.filter(campaign => {
+    // Filtro de busca
+    if (searchQuery && !campaign.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    
+    // Filtro de status
+    if (statusFilter !== "all" && campaign.status !== statusFilter) {
+      return false;
+    }
+    
+    // Filtro de data
+    if (dateFilter !== "all") {
+      const campaignDate = new Date(campaign.created_at);
+      const now = new Date();
+      
+      if (dateFilter === "today") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (campaignDate < today) return false;
+      } else if (dateFilter === "7days") {
+        const sevenDaysAgo = new Date(now.setDate(now.getDate() - 7));
+        if (campaignDate < sevenDaysAgo) return false;
+      } else if (dateFilter === "30days") {
+        const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
+        if (campaignDate < thirtyDaysAgo) return false;
+      }
+    }
+    
+    return true;
+  });
+
+  // Exportar para CSV
+  const exportToCSV = () => {
+    if (!filteredCampaigns) return;
+    
+    const headers = ["Nome", "Status", "Data", "Total", "Enviados", "Entregues", "Lidos", "Falhas", "Taxa de Sucesso"];
+    const rows = filteredCampaigns.map(c => [
+      c.name,
+      getStatusLabel(c.status),
+      format(new Date(c.created_at), "dd/MM/yyyy HH:mm"),
+      c.total_items,
+      c.sent,
+      c.delivered,
+      c.read,
+      c.failed,
+      c.sent > 0 ? ((c.sent / (c.sent + c.failed)) * 100).toFixed(1) + '%' : '0%'
+    ]);
+    
+    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `campanhas_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    
+    toast({
+      title: "Exportado!",
+      description: "Relatório de campanhas baixado.",
+    });
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -94,13 +166,60 @@ export default function Campanhas() {
         </p>
       </div>
 
+      {/* Filtros */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Status</SelectItem>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="processing">Processando</SelectItem>
+                <SelectItem value="completed">Concluída</SelectItem>
+                <SelectItem value="failed">Falhou</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todo Período</SelectItem>
+                <SelectItem value="today">Hoje</SelectItem>
+                <SelectItem value="7days">Últimos 7 dias</SelectItem>
+                <SelectItem value="30days">Últimos 30 dias</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button variant="outline" onClick={exportToCSV} className="w-full">
+              <Download className="mr-2 h-4 w-4" />
+              Exportar CSV
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {isLoading && (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       )}
 
-      {!isLoading && campaigns && campaigns.length === 0 && (
+      {!isLoading && filteredCampaigns && filteredCampaigns.length === 0 && campaigns && campaigns.length === 0 && (
         <Card>
           <CardContent className="pt-6 text-center">
             <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -111,8 +230,19 @@ export default function Campanhas() {
         </Card>
       )}
 
+      {!isLoading && filteredCampaigns && filteredCampaigns.length === 0 && campaigns && campaigns.length > 0 && (
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <Filter className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">
+              Nenhuma campanha encontrada com os filtros aplicados.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4">
-        {campaigns?.map((campaign) => {
+        {filteredCampaigns?.map((campaign) => {
           const progress =
             campaign.total_items > 0
               ? ((campaign.sent + campaign.failed) / campaign.total_items) * 100

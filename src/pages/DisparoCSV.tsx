@@ -27,6 +27,11 @@ export default function DisparoCSV() {
   const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
   const [rate, setRate] = useState(40);
   const [campaignName, setCampaignName] = useState("");
+  const [validationResults, setValidationResults] = useState<{
+    valid: number;
+    invalid: number;
+    details: Array<{ row: number; phone: string; status: 'valid' | 'invalid'; reason?: string }>;
+  } | null>(null);
 
   const { data: whatsappNumbers } = useQuery({
     queryKey: ["whatsapp-numbers-active"],
@@ -58,6 +63,35 @@ export default function DisparoCSV() {
     enabled: !!selectedNumber,
   });
 
+  // Validar formato E.164
+  const validateMSISDN = (phone: string): { valid: boolean; formatted: string; reason?: string } => {
+    if (!phone) return { valid: false, formatted: '', reason: 'Vazio' };
+    
+    // Remover espaços, parênteses, hífens
+    let cleaned = phone.replace(/[\s\(\)\-]/g, '');
+    
+    // Se não começar com +, adicionar
+    if (!cleaned.startsWith('+')) {
+      // Se começar com 55, adicionar +
+      if (cleaned.startsWith('55')) {
+        cleaned = '+' + cleaned;
+      } else if (cleaned.length >= 10) {
+        // Assumir Brasil se tiver 10-11 dígitos
+        cleaned = '+55' + cleaned;
+      } else {
+        return { valid: false, formatted: cleaned, reason: 'Formato inválido' };
+      }
+    }
+    
+    // Validar formato E.164: + seguido de 1-15 dígitos
+    const e164Regex = /^\+[1-9]\d{1,14}$/;
+    if (!e164Regex.test(cleaned)) {
+      return { valid: false, formatted: cleaned, reason: 'Não é E.164' };
+    }
+    
+    return { valid: true, formatted: cleaned };
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -83,10 +117,40 @@ export default function DisparoCSV() {
 
       setHeaders(headers);
       setCsvData(data);
-      toast({
-        title: "CSV carregado!",
-        description: `${data.length} linhas encontradas.`,
-      });
+
+      // Validar números
+      const phoneColumn = headers.find(h => 
+        ['numero', 'telefone', 'phone', 'celular', 'whatsapp'].includes(h.toLowerCase())
+      );
+
+      if (phoneColumn) {
+        const results = data.map((row, idx) => {
+          const phone = row[phoneColumn];
+          const validation = validateMSISDN(phone);
+          return {
+            row: idx + 1,
+            phone,
+            status: validation.valid ? 'valid' as const : 'invalid' as const,
+            reason: validation.reason,
+          };
+        });
+
+        const valid = results.filter(r => r.status === 'valid').length;
+        const invalid = results.filter(r => r.status === 'invalid').length;
+
+        setValidationResults({ valid, invalid, details: results });
+
+        toast({
+          title: "CSV carregado!",
+          description: `${data.length} linhas: ${valid} válidos, ${invalid} inválidos.`,
+          variant: invalid > 0 ? "destructive" : "default",
+        });
+      } else {
+        toast({
+          title: "CSV carregado!",
+          description: `${data.length} linhas encontradas.`,
+        });
+      }
     };
     
     reader.readAsText(file);
@@ -287,6 +351,47 @@ export default function DisparoCSV() {
                     </table>
                   </div>
                 </div>
+
+                {/* Validação de Números */}
+                {validationResults && (
+                  <div className={`p-4 rounded-lg border ${
+                    validationResults.invalid > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-semibold">Validação de Números</span>
+                      <div className="flex gap-2">
+                        <Badge variant="default" className="bg-green-600">
+                          ✓ {validationResults.valid} válidos
+                        </Badge>
+                        {validationResults.invalid > 0 && (
+                          <Badge variant="destructive">
+                            ✗ {validationResults.invalid} inválidos
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {validationResults.invalid > 0 && (
+                      <div className="max-h-32 overflow-y-auto space-y-1">
+                        <p className="text-xs font-medium mb-2">Números com problema:</p>
+                        {validationResults.details
+                          .filter(d => d.status === 'invalid')
+                          .slice(0, 10)
+                          .map((detail, idx) => (
+                            <div key={idx} className="text-xs flex justify-between bg-white p-1 rounded">
+                              <span>Linha {detail.row}: {detail.phone}</span>
+                              <span className="text-red-600">{detail.reason}</span>
+                            </div>
+                          ))}
+                        {validationResults.details.filter(d => d.status === 'invalid').length > 10 && (
+                          <p className="text-xs text-muted-foreground">
+                            + {validationResults.details.filter(d => d.status === 'invalid').length - 10} mais...
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <Button onClick={() => setStep(2)} className="w-full">
                   Próximo: Configuração
