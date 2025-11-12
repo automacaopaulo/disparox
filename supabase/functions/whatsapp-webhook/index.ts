@@ -149,6 +149,27 @@ async function processInboundMessage(supabase: any, message: any, metadata: any)
     return;
   }
 
+  // 🚀 DETECÇÃO DE OPT-OUT AUTOMÁTICO
+  const messageText = extractMessageText(message);
+  const isOptOut = detectOptOut(messageText);
+  
+  if (isOptOut) {
+    console.log(`🛑 OPT-OUT DETECTADO de ${from}: "${messageText}"`);
+    
+    // Marcar contato como opt-out
+    await supabase
+      .from('contacts')
+      .upsert({
+        msisdn: from,
+        opt_out: true,
+        opt_out_reason: `Respondeu: ${messageText}`,
+        opt_out_date: timestamp,
+        name: metadata.profile?.name || null,
+      }, {
+        onConflict: 'msisdn'
+      });
+  }
+
   // Salvar mensagem
   await supabase.from('messages').insert({
     whatsapp_number_id: whatsappNumber.id,
@@ -167,10 +188,33 @@ async function processInboundMessage(supabase: any, message: any, metadata: any)
     .eq('msisdn', from)
     .maybeSingle();
 
-  if (!existingContact) {
+  if (!existingContact && !isOptOut) {
     await supabase.from('contacts').insert({
       msisdn: from,
       name: metadata.profile?.name || null,
     });
   }
+}
+
+// Extrair texto da mensagem
+function extractMessageText(message: any): string {
+  if (message.text?.body) return message.text.body;
+  if (message.button?.text) return message.button.text;
+  if (message.interactive?.button_reply?.title) return message.interactive.button_reply.title;
+  return '';
+}
+
+// Detectar palavras de opt-out (português, inglês, espanhol)
+function detectOptOut(text: string): boolean {
+  if (!text) return false;
+  
+  const normalized = text.toLowerCase().trim();
+  const optOutKeywords = [
+    'stop', 'parar', 'pare', 'cancelar', 'cancel', 'unsubscribe', 
+    'descadastrar', 'remover', 'remove', 'sair', 'exit', 'quit',
+    'basta', 'chega', 'não quero', 'nao quero', 'no mas', 'no more',
+    'opt out', 'opt-out', 'optout'
+  ];
+  
+  return optOutKeywords.some(keyword => normalized.includes(keyword));
 }

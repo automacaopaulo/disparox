@@ -5,6 +5,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// 🚀 RATE LIMIT PROFISSIONAL - 80 msg/s por número
+const RATE_LIMIT_PER_NUMBER = 80;
+const BATCH_DELAY_MS = 1000;
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [2000, 5000, 15000]; // Backoff exponencial: 2s, 5s, 15s
+
+// Códigos de erro que devem ser retentados
+const RETRYABLE_ERRORS = [
+  '1', '2', '4', '10', '80007', // Rate limits
+  '131000', '131005', '131008', // Limites de tier
+  '132000', '132001', // Limites de envio
+  '368', // Temporariamente indisponível
+  '131047', '131048', // Rate limit templates
+];
+
+// 🔒 24-HOUR WINDOW - Tempo desde última mensagem
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -38,7 +56,7 @@ Deno.serve(async (req) => {
       .update({ status: 'processing' })
       .eq('id', campaignId);
 
-    console.log(`Iniciando processamento da campanha ${campaignId}`);
+    console.log(`🚀 Iniciando campanha ${campaignId} com rate limit de ${RATE_LIMIT_PER_NUMBER} msg/s`);
 
     // Buscar items pending
     const { data: items, error: itemsError } = await supabase
@@ -52,21 +70,56 @@ Deno.serve(async (req) => {
       throw new Error(`Erro ao buscar items: ${itemsError.message}`);
     }
 
-    console.log(`${items?.length || 0} items para processar`);
+    console.log(`📊 ${items?.length || 0} items para processar`);
 
-    const rate = campaign.processing_rate || 40;
-    const delayBetweenBatches = 1000; // 1 segundo
+    const rate = campaign.processing_rate || RATE_LIMIT_PER_NUMBER;
     let sent = 0;
     let failed = 0;
+    let skipped = 0;
     const errorSummary: Record<string, number> = {};
 
-    // Processar em lotes
+    // Processar em lotes com rate limit
     for (let i = 0; i < (items?.length || 0); i += rate) {
       const batch = items!.slice(i, i + rate);
 
       await Promise.all(
         batch.map(async (item) => {
           try {
+            // 🚫 VERIFICAR OPT-OUT
+            const { data: contact } = await supabase
+              .from('contacts')
+              .select('opt_out, last_message_sent_at')
+              .eq('msisdn', item.msisdn)
+              .maybeSingle();
+
+            if (contact?.opt_out) {
+              console.log(`🚫 Opt-out detectado: ${item.msisdn}`);
+              await supabase
+                .from('campaign_items')
+                .update({
+                  status: 'failed',
+                  error_code: 'OPT_OUT',
+                  error_message: 'Contato solicitou não receber mensagens',
+                })
+                .eq('id', item.id);
+              skipped += 1;
+              return;
+            }
+
+            // ⏰ VALIDAR JANELA 24H
+            if (contact?.last_message_sent_at) {
+              const lastMessageTime = new Date(contact.last_message_sent_at).getTime();
+              const now = Date.now();
+              const timeSinceLastMessage = now - lastMessageTime;
+
+              // Se passou mais de 24h, precisa usar template
+              const needsTemplate = timeSinceLastMessage > TWENTY_FOUR_HOURS_MS;
+              
+              if (!needsTemplate && campaign.template_name) {
+                console.log(`⏰ Dentro da janela 24h: ${item.msisdn}`);
+              }
+            }
+
             // Buscar template
             const { data: template } = await supabase
               .from('templates')
@@ -128,62 +181,110 @@ Deno.serve(async (req) => {
               },
             };
 
-            // Enviar
-            const url = `https://graph.facebook.com/v21.0/${whatsappNumber.phone_number_id}/messages`;
-            const response = await fetch(url, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${whatsappNumber.access_token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(data),
-            });
+            // 🔄 ENVIAR COM RETRY E BACKOFF EXPONENCIAL
+            let success = false;
+            let lastError: any = null;
+            
+            for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+              try {
+                const url = `https://graph.facebook.com/v21.0/${whatsappNumber.phone_number_id}/messages`;
+                const response = await fetch(url, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${whatsappNumber.access_token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(data),
+                });
 
-            const responseData = await response.json();
+                const responseData = await response.json();
 
-            if (!response.ok) {
-              const errorCode = responseData.error?.code?.toString() || 'unknown';
-              errorSummary[errorCode] = (errorSummary[errorCode] || 0) + 1;
+                if (!response.ok) {
+                  const errorCode = responseData.error?.code?.toString() || 'unknown';
+                  lastError = responseData;
 
-              await supabase
-                .from('campaign_items')
-                .update({
-                  status: 'failed',
-                  error_code: errorCode,
-                  error_message: responseData.error?.message,
-                  fbtrace_id: responseData.error?.fbtrace_id,
-                })
-                .eq('id', item.id);
+                  // Verificar se é erro retentável
+                  if (RETRYABLE_ERRORS.includes(errorCode) && attempt < MAX_RETRIES) {
+                    console.log(`⚠️ Erro retentável ${errorCode}, tentativa ${attempt + 1}/${MAX_RETRIES}`);
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
+                    continue;
+                  }
 
-              failed += 1;
+                  // Erro definitivo
+                  errorSummary[errorCode] = (errorSummary[errorCode] || 0) + 1;
 
-              // Se template pausado, desativar
-              if (isPausedError(responseData.error)) {
-                console.log(`Template ${campaign.template_name} pausado, desativando...`);
-                await supabase
-                  .from('templates')
-                  .update({ is_active: false })
-                  .eq('id', template.id);
+                  await supabase
+                    .from('campaign_items')
+                    .update({
+                      status: 'failed',
+                      error_code: errorCode,
+                      error_message: responseData.error?.message,
+                      fbtrace_id: responseData.error?.fbtrace_id,
+                      retry_count: attempt,
+                      last_error_at: new Date().toISOString(),
+                    })
+                    .eq('id', item.id);
+
+                  failed += 1;
+
+                  // Se template pausado, desativar
+                  if (isPausedError(responseData.error)) {
+                    console.log(`⏸️ Template ${campaign.template_name} pausado, desativando...`);
+                    await supabase
+                      .from('templates')
+                      .update({ is_active: false })
+                      .eq('id', template.id);
+                  }
+                  
+                  break;
+                } else {
+                  // ✅ Sucesso
+                  await supabase
+                    .from('campaign_items')
+                    .update({
+                      status: 'sent',
+                      message_id: responseData.messages?.[0]?.id,
+                      retry_count: attempt,
+                    })
+                    .eq('id', item.id);
+
+                  // Atualizar timestamp do contato (janela 24h)
+                  await supabase
+                    .from('contacts')
+                    .upsert({
+                      msisdn: sanitizedTo,
+                      last_message_sent_at: new Date().toISOString(),
+                    }, {
+                      onConflict: 'msisdn',
+                    });
+
+                  sent += 1;
+                  success = true;
+                  break;
+                }
+              } catch (fetchError) {
+                lastError = fetchError;
+                if (attempt < MAX_RETRIES) {
+                  console.log(`🔄 Erro de rede, tentativa ${attempt + 1}/${MAX_RETRIES}`);
+                  await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
+                }
               }
-            } else {
-              await supabase
-                .from('campaign_items')
-                .update({
-                  status: 'sent',
-                  message_id: responseData.messages?.[0]?.id,
-                })
-                .eq('id', item.id);
-
-              sent += 1;
             }
+
+            // Se falhou após todas as tentativas
+            if (!success && lastError) {
+              throw lastError;
+            }
+
           } catch (error) {
-            console.error(`Erro no item ${item.id}:`, error);
+            console.error(`❌ Erro no item ${item.id}:`, error);
             const errorMessage = error instanceof Error ? error.message : String(error);
             await supabase
               .from('campaign_items')
               .update({
                 status: 'failed',
                 error_message: errorMessage,
+                last_error_at: new Date().toISOString(),
               })
               .eq('id', item.id);
 
@@ -192,9 +293,10 @@ Deno.serve(async (req) => {
         })
       );
 
-      // Delay entre lotes
+      // Delay entre lotes com jitter para evitar rate limit
       if (i + rate < (items?.length || 0)) {
-        await new Promise((resolve) => setTimeout(resolve, delayBetweenBatches));
+        const jitter = Math.random() * 500; // 0-500ms de jitter
+        await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS + jitter));
       }
     }
 
@@ -209,15 +311,15 @@ Deno.serve(async (req) => {
       })
       .eq('id', campaignId);
 
-    console.log(`Campanha finalizada: ${sent} enviados, ${failed} falhas`);
+    console.log(`✅ Campanha finalizada: ${sent} enviados, ${failed} falhas, ${skipped} opt-out`);
 
     return new Response(
-      JSON.stringify({ success: true, sent, failed, errorSummary }),
+      JSON.stringify({ success: true, sent, failed, skipped, errorSummary }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Erro:', error);
+    console.error('❌ Erro:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(
       JSON.stringify({ error: errorMessage }),

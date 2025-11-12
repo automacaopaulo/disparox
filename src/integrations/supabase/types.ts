@@ -46,8 +46,10 @@ export type Database = {
           error_message: string | null
           fbtrace_id: string | null
           id: string
+          last_error_at: string | null
           message_id: string | null
           msisdn: string
+          next_retry_at: string | null
           params: Json | null
           retry_count: number | null
           status: string | null
@@ -60,8 +62,10 @@ export type Database = {
           error_message?: string | null
           fbtrace_id?: string | null
           id?: string
+          last_error_at?: string | null
           message_id?: string | null
           msisdn: string
+          next_retry_at?: string | null
           params?: Json | null
           retry_count?: number | null
           status?: string | null
@@ -74,8 +78,10 @@ export type Database = {
           error_message?: string | null
           fbtrace_id?: string | null
           id?: string
+          last_error_at?: string | null
           message_id?: string | null
           msisdn?: string
+          next_retry_at?: string | null
           params?: Json | null
           retry_count?: number | null
           status?: string | null
@@ -161,27 +167,36 @@ export type Database = {
           cpf: string | null
           created_at: string | null
           id: string
+          last_message_sent_at: string | null
           msisdn: string
           name: string | null
           opt_out: boolean | null
+          opt_out_date: string | null
+          opt_out_reason: string | null
           updated_at: string | null
         }
         Insert: {
           cpf?: string | null
           created_at?: string | null
           id?: string
+          last_message_sent_at?: string | null
           msisdn: string
           name?: string | null
           opt_out?: boolean | null
+          opt_out_date?: string | null
+          opt_out_reason?: string | null
           updated_at?: string | null
         }
         Update: {
           cpf?: string | null
           created_at?: string | null
           id?: string
+          last_message_sent_at?: string | null
           msisdn?: string
           name?: string | null
           opt_out?: boolean | null
+          opt_out_date?: string | null
+          opt_out_reason?: string | null
           updated_at?: string | null
         }
         Relationships: []

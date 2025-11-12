@@ -1,4 +1,4 @@
-import { Home, Phone, Send, List, MessageSquare, Users, FileText, Layers, Settings, BarChart3, Calculator, Globe } from "lucide-react";
+import { Home, Phone, Send, List, MessageSquare, Users, FileText, Layers, Settings, BarChart3, Calculator, Globe, UserX } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 
 import {
@@ -23,6 +23,7 @@ const items = [
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Calculadora", url: "/calculadora", icon: Calculator },
   { title: "Multi-idioma", url: "/multi-idioma", icon: Globe },
+  { title: "Opt-Out", url: "/opt-out", icon: UserX },
   { title: "Contatos", url: "/contatos", icon: Users },
   { title: "Mensagens", url: "/mensagens", icon: FileText },
   { title: "Configurações", url: "/configuracoes", icon: Settings },

@@ -156,7 +156,7 @@ export default function Mensagens() {
                 <SelectItem value="all">📱 Todos os Números</SelectItem>
                 {whatsappNumbers?.map((num) => (
                   <SelectItem key={num.id} value={num.id}>
-                    {num.display_name}
+                    {num.display_name || num.phone_number_id || 'Número sem nome'}
                   </SelectItem>
                 ))}
               </SelectContent>
