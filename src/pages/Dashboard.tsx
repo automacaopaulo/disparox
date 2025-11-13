@@ -116,55 +116,59 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto">
-      {/* Header */}
+    <div className="space-y-8 max-w-[1400px] mx-auto">
+      {/* Header Premium */}
       <div className="section-header">
-        <h1 className="section-title flex items-center gap-3">
-          <Activity className="h-8 w-8 text-primary" />
-          Dashboard
-        </h1>
-        <p className="section-description">
-          Visão geral e métricas em tempo real do seu sistema WhatsApp
-        </p>
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl">
+            <Activity className="h-8 w-8 text-primary" />
+          </div>
+          <div>
+            <h1 className="section-title">Dashboard</h1>
+            <p className="section-description mt-1">
+              Visão geral e métricas em tempo real do seu sistema WhatsApp
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* KPIs Principais - Gigantes */}
+      {/* KPIs Principais - Premium */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="premium-card hover:shadow-xl transition-all duration-200">
+        <Card className="premium-card hover:shadow-xl transition-all duration-300 group">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Números Ativos
             </CardTitle>
-            <div className="p-2 bg-primary/10 rounded-lg">
+            <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
               <Phone className="h-5 w-5 text-primary" />
             </div>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="stat-value text-primary">
+            <div className="stat-value text-primary transition-transform group-hover:scale-105 duration-300">
               {stats?.activeNumbers || 0}
             </div>
             <p className="text-sm text-muted-foreground">
               de {stats?.totalNumbers || 0} cadastrados
             </p>
             {stats?.lowQualityNumbers ? (
-              <Badge variant="destructive" className="mt-2">
+              <Badge variant="destructive" className="mt-2 animate-pulse">
                 {stats.lowQualityNumbers} com baixa qualidade
               </Badge>
             ) : null}
           </CardContent>
         </Card>
 
-        <Card className="premium-card hover:shadow-xl transition-all duration-200">
+        <Card className="premium-card hover:shadow-xl transition-all duration-300 group">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Templates Ativos
             </CardTitle>
-            <div className="p-2 bg-success/10 rounded-lg">
+            <div className="p-2 bg-success/10 rounded-lg group-hover:bg-success/20 transition-colors">
               <Send className="h-5 w-5 text-success" />
             </div>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="stat-value text-success">
+            <div className="stat-value text-success transition-transform group-hover:scale-105 duration-300">
               {stats?.activeTemplates || 0}
             </div>
             <p className="text-sm text-muted-foreground">
@@ -173,17 +177,17 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="premium-card hover:shadow-xl transition-all duration-200">
+        <Card className="premium-card hover:shadow-xl transition-all duration-300 group">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Campanhas Ativas
             </CardTitle>
-            <div className="p-2 bg-warning/10 rounded-lg">
+            <div className="p-2 bg-warning/10 rounded-lg group-hover:bg-warning/20 transition-colors">
               <Clock className="h-5 w-5 text-warning" />
             </div>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="stat-value text-warning">
+            <div className="stat-value text-warning transition-transform group-hover:scale-105 duration-300">
               {stats?.campaignsActive || 0}
             </div>
             <p className="text-sm text-muted-foreground">
@@ -192,17 +196,17 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="premium-card hover:shadow-xl transition-all duration-200">
+        <Card className="premium-card hover:shadow-xl transition-all duration-300 group">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Mensagens Hoje
             </CardTitle>
-            <div className="p-2 bg-purple-500/10 rounded-lg">
+            <div className="p-2 bg-purple-500/10 rounded-lg group-hover:bg-purple-500/20 transition-colors">
               <TrendingUp className="h-5 w-5 text-purple-600" />
             </div>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="stat-value text-purple-600">
+            <div className="stat-value text-purple-600 transition-transform group-hover:scale-105 duration-300">
               {stats?.messagesToday || 0}
             </div>
             <p className="text-sm text-muted-foreground">

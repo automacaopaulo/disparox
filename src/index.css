@@ -138,15 +138,15 @@ All colors MUST be HSL.
 /* Premium components */
 @layer components {
   .premium-card {
-    @apply rounded-2xl border bg-card text-card-foreground shadow-md transition-shadow hover:shadow-lg;
+    @apply rounded-2xl border border-border/40 bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-lg hover:border-border/60;
   }
 
   .premium-badge {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-all;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-all duration-200;
   }
 
   .premium-input {
-    @apply flex h-11 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background transition-all file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply flex h-11 w-full rounded-xl border border-input bg-background px-4 py-2 text-sm ring-offset-background transition-all duration-200 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .stat-card {
@@ -162,7 +162,7 @@ All colors MUST be HSL.
   }
 
   .section-header {
-    @apply space-y-1 mb-6;
+    @apply space-y-2 mb-8;
   }
 
   .section-title {
@@ -170,6 +170,41 @@ All colors MUST be HSL.
   }
 
   .section-description {
-    @apply text-base text-muted-foreground;
+    @apply text-base text-muted-foreground leading-relaxed;
+  }
+}
+
+/* Smooth animations */
+@layer utilities {
+  .animate-in {
+    animation-fill-mode: both;
+  }
+
+  .fade-in-50 {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  .slide-in-from-bottom-4 {
+    animation: slideInFromBottom 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideInFromBottom {
+    from {
+      transform: translateY(16px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 }
