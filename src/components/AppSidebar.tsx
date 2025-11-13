@@ -9,7 +9,6 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
@@ -75,26 +74,23 @@ export function AppSidebar() {
         {/* Menu Groups */}
         {menuGroups.map((group, groupIndex) => (
           <SidebarGroup key={group.label} className="px-3 py-4">
-            <SidebarGroupLabel className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-foreground">
+            <SidebarGroupLabel className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-white">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-1">
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={item.url} 
-                        end
-                        style={{ color: '#FFFFFF' }}
-                        className="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-accent/50"
-                        activeClassName="bg-primary/10 shadow-sm [&>span:first-child]:opacity-100"
-                      >
-                        <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary opacity-0 transition-opacity" />
-                        <item.icon className="h-[18px] w-[18px] shrink-0" style={{ color: '#FFFFFF' }} />
-                        <span className="truncate" style={{ color: '#FFFFFF' }}>{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
+                    <NavLink 
+                      to={item.url} 
+                      end
+                      className="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white transition-all hover:bg-accent/50 hover:text-white [&>svg]:text-white"
+                      activeClassName="bg-primary/10 text-primary shadow-sm [&>span:first-child]:opacity-100 [&>svg]:text-primary"
+                    >
+                      <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary opacity-0 transition-opacity" />
+                      <item.icon className="h-[18px] w-[18px] shrink-0" />
+                      <span className="truncate">{item.title}</span>
+                    </NavLink>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
