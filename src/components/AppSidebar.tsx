@@ -11,7 +11,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar";
 
 const menuGroups = [
@@ -65,35 +64,25 @@ const menuGroups = [
 ];
 
 export function AppSidebar() {
-  const { open } = useSidebar();
-
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/40">
+    <Sidebar className="border-r border-border/40 w-64">
       <SidebarContent className="gap-0">
         {/* Logo Section */}
-        <div className="flex h-16 items-center justify-center border-b border-border/40 px-4">
-          {open ? (
-            <Logo showText={true} className="transition-all duration-200" />
-          ) : (
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 6L24 16L8 26V6Z" fill="#3B82F6" />
-            </svg>
-          )}
+        <div className="flex h-16 items-center px-6 border-b border-border/40">
+          <Logo showText={true} />
         </div>
 
         {/* Menu Groups */}
         {menuGroups.map((group, groupIndex) => (
           <SidebarGroup key={group.label} className="px-3 py-4">
-            {open && (
-              <SidebarGroupLabel className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-                {group.label}
-              </SidebarGroupLabel>
-            )}
+            <SidebarGroupLabel className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+              {group.label}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-1">
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild tooltip={item.title}>
+                    <SidebarMenuButton asChild>
                       <NavLink 
                         to={item.url} 
                         end
@@ -101,15 +90,15 @@ export function AppSidebar() {
                         activeClassName="bg-primary/10 text-primary shadow-sm [&>span:first-child]:opacity-100"
                       >
                         <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary opacity-0 transition-opacity" />
-                        <item.icon className="h-[18px] w-[18px] shrink-0 transition-transform group-hover:scale-110" />
-                        {open && <span className="truncate">{item.title}</span>}
+                        <item.icon className="h-[18px] w-[18px] shrink-0" />
+                        <span className="truncate">{item.title}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
-            {groupIndex < menuGroups.length - 1 && open && (
+            {groupIndex < menuGroups.length - 1 && (
               <div className="mt-4 h-px bg-border/40" />
             )}
           </SidebarGroup>
