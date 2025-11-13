@@ -17,17 +17,20 @@ Deno.serve(async (req) => {
     const token = url.searchParams.get('hub.verify_token');
     const challenge = url.searchParams.get('hub.challenge');
 
+    console.log('📥 GET recebido - mode:', mode, 'token recebido:', token?.substring(0, 10) + '...');
+
     const verifyToken = Deno.env.get('WEBHOOK_VERIFY_TOKEN') || 'lovable_whatsapp_2025';
+    console.log('🔑 Token esperado:', verifyToken?.substring(0, 10) + '...');
 
     if (mode === 'subscribe' && token === verifyToken) {
-      console.log('✅ Webhook verificado com sucesso');
+      console.log('✅ Webhook verificado com sucesso! Challenge:', challenge);
       return new Response(challenge, { 
         status: 200,
         headers: { 'Content-Type': 'text/plain' }
       });
     }
 
-    console.log('❌ Verificação falhou - mode:', mode, 'token:', token);
+    console.log('❌ Verificação falhou - mode:', mode, 'token match:', token === verifyToken);
     return new Response('Forbidden', { status: 403 });
   }
 

@@ -64,7 +64,7 @@ export default function Configuracoes() {
     updateConfigMutation.mutate({ key, value });
   };
 
-  const webhookUrl = `${window.location.origin.replace('http:', 'https:')}/webhook`;
+  const webhookUrl = `https://vdihusamibhboeuaavlu.supabase.co/functions/v1/whatsapp-webhook`;
 
   if (isLoading) {
     return (

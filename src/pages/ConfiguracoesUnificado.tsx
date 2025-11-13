@@ -25,12 +25,16 @@ export default function ConfiguracoesUnificado() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="geral" className="mt-6">
-          <Configuracoes />
+        <TabsContent value="geral" className="mt-6" forceMount>
+          <div className="data-[state=inactive]:hidden">
+            <Configuracoes />
+          </div>
         </TabsContent>
 
-        <TabsContent value="idiomas" className="mt-6">
-          <MultiLanguage />
+        <TabsContent value="idiomas" className="mt-6" forceMount>
+          <div className="data-[state=inactive]:hidden">
+            <MultiLanguage />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
