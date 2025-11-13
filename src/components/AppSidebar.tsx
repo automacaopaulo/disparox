@@ -86,12 +86,13 @@ export function AppSidebar() {
                       <NavLink 
                         to={item.url} 
                         end
-                        className="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium !text-white transition-all hover:bg-accent/50 hover:!text-white"
-                        activeClassName="bg-primary/10 !text-primary shadow-sm [&>span:first-child]:opacity-100"
+                        style={{ color: '#FFFFFF' }}
+                        className="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-accent/50"
+                        activeClassName="bg-primary/10 shadow-sm [&>span:first-child]:opacity-100"
                       >
                         <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary opacity-0 transition-opacity" />
-                        <item.icon className="h-[18px] w-[18px] shrink-0 !text-white" />
-                        <span className="truncate !text-white">{item.title}</span>
+                        <item.icon className="h-[18px] w-[18px] shrink-0" style={{ color: '#FFFFFF' }} />
+                        <span className="truncate" style={{ color: '#FFFFFF' }}>{item.title}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
