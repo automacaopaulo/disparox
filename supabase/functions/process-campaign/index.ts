@@ -13,11 +13,16 @@ const RETRY_DELAYS = [2000, 5000, 15000]; // Backoff exponencial: 2s, 5s, 15s
 
 // Códigos de erro que devem ser retentados
 const RETRYABLE_ERRORS = [
-  '1', '2', '4', '10', '80007', // Rate limits
-  '131000', '131005', '131008', // Limites de tier
-  '132000', '132001', // Limites de envio
+  '1', '2', '4', '10', // Rate limits básicos
+  '80007', // Rate limit
+  '131000', '131005', '131008', '131009', // Limites de tier e parâmetros
+  '132000', '132001', '132007', // Limites de envio
+  '132015', '132016', // Template pausado/desabilitado
+  '132068', // Taxa de spam excedida
+  '133004', '133005', '133006', // Erros de template
   '368', // Temporariamente indisponível
   '131047', '131048', // Rate limit templates
+  '133016', // Template pausado por baixa qualidade
 ];
 
 // 🔒 24-HOUR WINDOW - Tempo desde última mensagem
@@ -180,7 +185,7 @@ Deno.serve(async (req) => {
                     }
                     return {
                       type: 'text',
-                      text: sanitizeParam(paramValue),
+                      text: sanitizeUrlParam(paramValue), // Usar sanitização específica para URL
                     };
                   }).filter(Boolean);
 
@@ -188,7 +193,7 @@ Deno.serve(async (req) => {
                     components.push({
                       type: 'button',
                       sub_type: 'url',
-                      index: idx,
+                      index: idx.toString(), // Meta API requer string
                       parameters: buttonParams,
                     });
                   }
@@ -216,7 +221,7 @@ Deno.serve(async (req) => {
             
             for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
               try {
-                const url = `https://graph.facebook.com/v21.0/${whatsappNumber.phone_number_id}/messages`;
+                const url = `https://graph.facebook.com/v24.0/${whatsappNumber.phone_number_id}/messages`;
                 const response = await fetch(url, {
                   method: 'POST',
                   headers: {
@@ -359,10 +364,12 @@ Deno.serve(async (req) => {
 
 function sanitizeParam(value: any): string {
   let s = (value ?? 'N/A').toString();
+  // Remover caracteres não-ASCII para evitar erro 132018
+  s = s.replace(/[^\x00-\x7F]/g, '');
   s = s.replace(/[\r\n\t]/g, ' ');
   s = s.replace(/ {2,}/g, ' ');
   s = s.trim();
-  if (s.length > 1000) s = s.slice(0, 999) + '…';
+  if (s.length > 1024) s = s.slice(0, 1023) + '…';
   if (!s) s = 'N/A';
   return s;
 }
@@ -375,15 +382,29 @@ function normalizeMsisdn(raw: string): string {
   return digits;
 }
 
+function sanitizeUrlParam(value: any): string {
+  let s = (value ?? '').toString();
+  // Remover espaços e quebras de linha
+  s = s.replace(/[\r\n\t\s]/g, '');
+  s = s.trim();
+  // Encode para URL
+  if (s) s = encodeURIComponent(s);
+  if (!s) s = 'default';
+  return s;
+}
+
 function isPausedError(error: any): boolean {
   const code = error?.code;
   const subcode = error?.error_subcode;
   const msg = (error?.message || '').toLowerCase();
   const details = (error?.error_data?.details || '').toLowerCase();
 
-  if (code === 132015) return true;
+  // Códigos específicos de template pausado
+  if (code === 132015 || code === 132016) return true; // Template pausado/desabilitado
+  if (code === 133016) return true; // Template pausado por qualidade
   if (code === 470 && (details.includes('paused') || msg.includes('paused'))) return true;
   if (msg.includes('paused') || details.includes('paused')) return true;
+  if (msg.includes('disabled') || details.includes('disabled')) return true;
   if (subcode === 2018265 || subcode === 2018028) return true;
 
   return false;
