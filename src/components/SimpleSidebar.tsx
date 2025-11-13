@@ -1,26 +1,19 @@
 import { NavLink } from "react-router-dom";
 import { 
-  Home, Phone, Send, List, MessageSquare, Users, FileText, Layers, 
-  Settings, BarChart3, Calculator, Globe, UserX, Workflow, Tag, Target, Bot 
+  Home, Phone, Layers, Send, MessageSquare, Workflow, 
+  Users, UserX, BarChart3, Settings
 } from "lucide-react";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Números WhatsApp", url: "/numeros", icon: Phone },
   { title: "Templates", url: "/templates", icon: Layers },
-  { title: "Disparo 1:1", url: "/disparo-single", icon: Send },
-  { title: "Disparo CSV", url: "/disparo-csv", icon: List },
+  { title: "Disparos", url: "/disparos", icon: Send },
   { title: "Campanhas", url: "/campanhas", icon: MessageSquare },
-  { title: "Flow Builder", url: "/flows", icon: Workflow },
+  { title: "Automação", url: "/automacao", icon: Workflow },
   { title: "Contatos", url: "/contatos", icon: Users },
-  { title: "Tags", url: "/tags", icon: Tag },
-  { title: "Segmentação", url: "/segmentacao", icon: Target },
   { title: "Opt-Out", url: "/opt-out", icon: UserX },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "Mensagens", url: "/mensagens", icon: FileText },
-  { title: "Calculadora", url: "/calculadora", icon: Calculator },
-  { title: "Multi-idioma", url: "/multi-idioma", icon: Globe },
-  { title: "Chatbot IA", url: "/chatbot", icon: Bot },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 

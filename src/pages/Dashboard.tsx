@@ -1,14 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Phone, Send, CheckCircle, XCircle, AlertCircle, TrendingUp, Clock, Activity } from "lucide-react";
+import { Phone, Send, CheckCircle, TrendingUp, Clock, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { useLayoutTheme } from "@/contexts/LayoutThemeContext";
 
 export default function Dashboard() {
-  const { theme } = useLayoutTheme();
-  
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
@@ -108,8 +105,8 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="flex flex-col items-center gap-4">
-          <Activity className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Carregando dashboard...</p>
+          <Activity className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-sm text-slate-600">Carregando dashboard...</p>
         </div>
       </div>
     );
@@ -118,94 +115,71 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="mb-8">
-        <h1 className={`text-2xl font-semibold tracking-tight mb-2 flex items-center gap-3 ${theme === "modern" ? "" : "text-xl"}`}>
-          {theme === "modern" && (
-            <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
-              <TrendingUp className="h-5 w-5 text-primary" />
-            </div>
-          )}
-          Dashboard
-        </h1>
-        <p className={theme === "modern" ? "text-sm text-muted-foreground/80" : "text-sm text-muted-foreground"}>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Dashboard</h1>
+        <p className="text-slate-600 dark:text-slate-400">
           Visão geral e métricas em tempo real do seu sistema WhatsApp
         </p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className={theme === "modern" ? "group hover:shadow-xl transition-all duration-300 border-border/40" : ""}>
+        <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-slate-600">
               Números Ativos
             </CardTitle>
-            <div className={theme === "modern" ? "p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors" : ""}>
-              <Phone className={`h-4 w-4 text-primary ${theme === "modern" ? "transition-transform group-hover:scale-105 duration-300" : ""}`} />
-            </div>
+            <Phone className="h-5 w-5 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-semibold ${theme === "modern" ? "transition-transform group-hover:scale-105 duration-300" : ""}`}>
-              {stats?.activeNumbers || 0}
-            </div>
+            <div className="text-2xl font-semibold">{stats?.activeNumbers || 0}</div>
             {stats && stats.lowQualityNumbers > 0 && (
-              <Badge variant="destructive" className={`mt-2 text-xs ${theme === "modern" ? "animate-pulse" : ""}`}>
+              <Badge variant="destructive" className="mt-2 text-xs">
                 {stats.lowQualityNumbers} com qualidade baixa
               </Badge>
             )}
           </CardContent>
         </Card>
 
-        <Card className={theme === "modern" ? "group hover:shadow-xl transition-all duration-300 border-border/40" : ""}>
+        <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-slate-600">
               Templates Ativos
             </CardTitle>
-            <div className={theme === "modern" ? "p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors" : ""}>
-              <CheckCircle className={`h-4 w-4 text-primary ${theme === "modern" ? "transition-transform group-hover:scale-105 duration-300" : ""}`} />
-            </div>
+            <CheckCircle className="h-5 w-5 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-semibold ${theme === "modern" ? "transition-transform group-hover:scale-105 duration-300" : ""}`}>
-              {stats?.activeTemplates || 0}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-2xl font-semibold">{stats?.activeTemplates || 0}</div>
+            <p className="text-xs text-slate-600 mt-1">
               Total: {stats?.totalTemplates || 0}
             </p>
           </CardContent>
         </Card>
 
-        <Card className={theme === "modern" ? "group hover:shadow-xl transition-all duration-300 border-border/40" : ""}>
+        <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-slate-600">
               Campanhas Ativas
             </CardTitle>
-            <div className={theme === "modern" ? "p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors" : ""}>
-              <Send className={`h-4 w-4 text-primary ${theme === "modern" ? "transition-transform group-hover:scale-105 duration-300" : ""}`} />
-            </div>
+            <Send className="h-5 w-5 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-semibold ${theme === "modern" ? "transition-transform group-hover:scale-105 duration-300" : ""}`}>
-              {stats?.campaignsActive || 0}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-2xl font-semibold">{stats?.campaignsActive || 0}</div>
+            <p className="text-xs text-slate-600 mt-1">
               Total: {stats?.totalCampaigns || 0}
             </p>
           </CardContent>
         </Card>
 
-        <Card className={theme === "modern" ? "group hover:shadow-xl transition-all duration-300 border-border/40" : ""}>
+        <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-slate-600">
               Mensagens Hoje
             </CardTitle>
-            <div className={theme === "modern" ? "p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors" : ""}>
-              <Clock className={`h-4 w-4 text-primary ${theme === "modern" ? "transition-transform group-hover:scale-105 duration-300" : ""}`} />
-            </div>
+            <Clock className="h-5 w-5 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-semibold ${theme === "modern" ? "transition-transform group-hover:scale-105 duration-300" : ""}`}>
-              {stats?.messagesToday || 0}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-2xl font-semibold">{stats?.messagesToday || 0}</div>
+            <p className="text-xs text-slate-600 mt-1">
               Total: {stats?.totalMessages || 0}
             </p>
           </CardContent>
@@ -214,46 +188,46 @@ export default function Dashboard() {
 
       {/* Performance Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className={theme === "modern" ? "border-border/40" : ""}>
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-slate-600">
               Taxa de Sucesso
             </CardTitle>
-            <CheckCircle className="h-4 w-4 text-success" />
+            <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats?.successRate}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-slate-600 mt-1">
               Mensagens enviadas com sucesso
             </p>
           </CardContent>
         </Card>
 
-        <Card className={theme === "modern" ? "border-border/40" : ""}>
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-slate-600">
               Taxa de Entrega
             </CardTitle>
-            <CheckCircle className="h-4 w-4 text-primary" />
+            <CheckCircle className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats?.deliveryRate}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-slate-600 mt-1">
               Das mensagens enviadas
             </p>
           </CardContent>
         </Card>
 
-        <Card className={theme === "modern" ? "border-border/40" : ""}>
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-slate-600">
               Taxa de Leitura
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-success" />
+            <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{stats?.readRate}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-slate-600 mt-1">
               Das mensagens entregues
             </p>
           </CardContent>
@@ -262,24 +236,24 @@ export default function Dashboard() {
 
       {/* Charts */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className={theme === "modern" ? "border-border/40" : ""}>
+        <Card>
           <CardHeader>
             <CardTitle className="text-base">Volume de Mensagens (7 dias)</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={stats?.messagesPerDay || []}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="day" className="text-xs" />
-                <YAxis className="text-xs" />
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" />
+                <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="mensagens" stroke="hsl(var(--primary))" strokeWidth={2} />
+                <Line type="monotone" dataKey="mensagens" stroke="#2563eb" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card className={theme === "modern" ? "border-border/40" : ""}>
+        <Card>
           <CardHeader>
             <CardTitle className="text-base">Distribuição de Status</CardTitle>
           </CardHeader>
