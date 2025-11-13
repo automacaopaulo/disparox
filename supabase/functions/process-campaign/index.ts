@@ -167,6 +167,35 @@ Deno.serve(async (req) => {
               components.push({ type: 'header', parameters: headerParams });
             }
 
+            // BUTTONS - adicionar componente de botões se tiverem variáveis
+            if (structure.buttons?.length > 0) {
+              structure.buttons.forEach((btn: any, idx: number) => {
+                if (btn.type === 'URL' && btn.hasVars && btn.vars?.length > 0) {
+                  const buttonParams = btn.vars.map((v: any) => {
+                    const paramValue = params[`button_${idx}_${v.index}`];
+                    // Se o parâmetro estiver vazio, não adicionar o componente de botão
+                    if (!paramValue) {
+                      console.log(`⚠️ Parâmetro button_${idx}_${v.index} vazio, pulando botão`);
+                      return null;
+                    }
+                    return {
+                      type: 'text',
+                      text: sanitizeParam(paramValue),
+                    };
+                  }).filter(Boolean);
+
+                  if (buttonParams.length > 0) {
+                    components.push({
+                      type: 'button',
+                      sub_type: 'url',
+                      index: idx,
+                      parameters: buttonParams,
+                    });
+                  }
+                }
+              });
+            }
+
             // Sanitizar número
             const sanitizedTo = normalizeMsisdn(item.msisdn);
 
