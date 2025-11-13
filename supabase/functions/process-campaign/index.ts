@@ -154,21 +154,38 @@ Deno.serve(async (req) => {
             const params = item.params || {};
             const components: any[] = [];
 
+            console.log(`📋 Template: ${campaign.template_name}`);
+            console.log(`📊 Params recebidos:`, JSON.stringify(params));
+            console.log(`🔧 Structure vars:`, JSON.stringify({
+              body: structure.body?.vars,
+              header: structure.header?.vars
+            }));
+
             // BODY
             if (structure.body?.vars?.length > 0) {
-              const bodyParams = structure.body.vars.map((n: number) => ({
-                type: 'text',
-                text: sanitizeTextParam(params[`body_${n}`] || 'N/A'),
-              }));
+              const bodyParams = structure.body.vars.map((v: any) => {
+                const varIndex = typeof v === 'number' ? v : (v.index || v);
+                const paramValue = params[`body_${varIndex}`];
+                console.log(`  body_${varIndex}: "${paramValue}"`);
+                return {
+                  type: 'text',
+                  text: sanitizeTextParam(paramValue || 'N/A'),
+                };
+              });
               components.push({ type: 'body', parameters: bodyParams });
             }
 
             // HEADER
             if (structure.header?.format === 'TEXT' && structure.header.vars?.length > 0) {
-              const headerParams = structure.header.vars.map((n: number) => ({
-                type: 'text',
-                text: sanitizeTextParam(params[`header_${n}`] || 'N/A'),
-              }));
+              const headerParams = structure.header.vars.map((v: any) => {
+                const varIndex = typeof v === 'number' ? v : (v.index || v);
+                const paramValue = params[`header_${varIndex}`];
+                console.log(`  header_${varIndex}: "${paramValue}"`);
+                return {
+                  type: 'text',
+                  text: sanitizeTextParam(paramValue || 'N/A'),
+                };
+              });
               components.push({ type: 'header', parameters: headerParams });
             }
 
