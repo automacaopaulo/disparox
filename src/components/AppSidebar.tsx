@@ -9,6 +9,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
@@ -81,15 +82,17 @@ export function AppSidebar() {
               <SidebarMenu className="gap-1">
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <NavLink
-                      to={item.url}
-                      end
-                      className="group flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent text-white"
-                      activeClassName="!bg-primary !text-white"
-                    >
-                      <item.icon className="h-4 w-4 shrink-0 transition-colors text-white" />
-                      <span className="truncate font-medium text-white">{item.title}</span>
-                    </NavLink>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end
+                        className="!text-slate-200 hover:!text-white"
+                        activeClassName="!bg-primary !text-white"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
