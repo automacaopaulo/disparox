@@ -98,7 +98,7 @@ export function AppSidebar() {
                       <NavLink 
                         to={item.url} 
                         end
-                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-all hover:bg-accent/50 hover:text-sidebar-foreground"
+                        className="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-all hover:bg-accent/50 hover:text-sidebar-foreground"
                         activeClassName="bg-primary/10 text-primary shadow-sm [&>span:first-child]:opacity-100"
                       >
                         {/* Active Indicator */}
