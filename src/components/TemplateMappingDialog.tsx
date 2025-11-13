@@ -28,12 +28,14 @@ interface TemplateMappingDialogProps {
   template: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  csvHeaders?: string[];
 }
 
 export function TemplateMappingDialog({
   template,
   open,
   onOpenChange,
+  csvHeaders = [],
 }: TemplateMappingDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -174,15 +176,33 @@ export function TemplateMappingDialog({
                   <Label className="text-xs text-muted-foreground">
                     {mappings.header_media?.type === "column" ? "Nome da Coluna" : "URL"}
                   </Label>
-                  <Input
-                    placeholder={
-                      mappings.header_media?.type === "column"
-                        ? "Ex: imagem_url, foto, link..."
-                        : "https://exemplo.com/imagem.jpg"
-                    }
-                    value={mappings.header_media?.value || ""}
-                    onChange={(e) => updateMapping("header_media", "value", e.target.value)}
-                  />
+                  {mappings.header_media?.type === "column" && csvHeaders.length > 0 ? (
+                    <Select
+                      value={mappings.header_media?.value || ""}
+                      onValueChange={(value) => updateMapping("header_media", "value", value)}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Selecione a coluna do CSV" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background max-h-[300px]">
+                        {csvHeaders.map((header) => (
+                          <SelectItem key={header} value={header}>
+                            {header}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      placeholder={
+                        mappings.header_media?.type === "column"
+                          ? "Ex: imagem_url, foto, link..."
+                          : "https://exemplo.com/imagem.jpg"
+                      }
+                      value={mappings.header_media?.value || ""}
+                      onChange={(e) => updateMapping("header_media", "value", e.target.value)}
+                    />
+                  )}
                 </div>
               </div>
               
@@ -229,23 +249,41 @@ export function TemplateMappingDialog({
                     <Label className="text-xs text-muted-foreground">
                       {mapping.type === "column" ? "Nome da Coluna" : "Valor"}
                     </Label>
-                    <Input
-                      placeholder={
-                        mapping.type === "column"
-                          ? variable.varType === 'currency' 
-                            ? "Ex: valor, preco, total..."
+                    {mapping.type === "column" && csvHeaders.length > 0 ? (
+                      <Select
+                        value={mapping.value || ""}
+                        onValueChange={(value) => updateMapping(varKey, "value", value)}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Selecione a coluna do CSV" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background max-h-[300px]">
+                          {csvHeaders.map((header) => (
+                            <SelectItem key={header} value={header}>
+                              {header}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        placeholder={
+                          mapping.type === "column"
+                            ? variable.varType === 'currency' 
+                              ? "Ex: valor, preco, total..."
+                              : variable.varType === 'date_time'
+                              ? "Ex: data, prazo, vencimento..."
+                              : "Ex: nome, telefone, empresa..."
+                            : variable.varType === 'currency'
+                            ? "Ex: R$ 100,00"
                             : variable.varType === 'date_time'
-                            ? "Ex: data, prazo, vencimento..."
-                            : "Ex: nome, telefone, empresa..."
-                          : variable.varType === 'currency'
-                          ? "Ex: R$ 100,00"
-                          : variable.varType === 'date_time'
-                          ? "Ex: 01/01/2024"
-                          : "Digite o valor fixo..."
-                      }
-                      value={mapping.value || ""}
-                      onChange={(e) => updateMapping(varKey, "value", e.target.value)}
-                    />
+                            ? "Ex: 01/01/2024"
+                            : "Digite o valor fixo..."
+                        }
+                        value={mapping.value || ""}
+                        onChange={(e) => updateMapping(varKey, "value", e.target.value)}
+                      />
+                    )}
                   </div>
                 </div>
 
