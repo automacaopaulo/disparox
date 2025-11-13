@@ -291,63 +291,47 @@ export default function DisparoCSV() {
   );
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
-      {/* Stepper Premium */}
-      <Card className="border-2 shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between gap-4">
-            {[
-              { num: 1, label: "Upload CSV", icon: Upload },
-              { num: 2, label: "Configuração", icon: Settings },
-              { num: 3, label: "Executar", icon: Send },
-            ].map(({ num, label, icon: Icon }, idx) => (
-              <div key={num} className="flex items-center gap-2">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                      step >= num
-                        ? "bg-primary text-primary-foreground shadow-lg scale-110"
-                        : "bg-muted/50 text-muted-foreground"
-                    }`}
-                  >
-                    {step > num ? <CheckCircle2 className="h-5 w-5" /> : num}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className={`text-sm font-semibold ${step >= num ? "text-foreground" : "text-muted-foreground"}`}>
-                      {label}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Icon className={`h-4 w-4 ${step >= num ? "text-primary" : "text-muted-foreground"}`} />
-                    </div>
-                  </div>
-                </div>
-                {idx < 2 && (
-                  <ChevronRight className={`h-5 w-5 mx-2 ${step > num ? "text-primary" : "text-muted-foreground"}`} />
-                )}
+    <div className="space-y-6 max-w-4xl">
+      {/* Stepper */}
+      <div className="flex items-center justify-between">
+        {[
+          { num: 1, label: "Upload CSV" },
+          { num: 2, label: "Configuração" },
+          { num: 3, label: "Executar" },
+        ].map(({ num, label }, idx) => (
+          <div key={num} className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  step >= num
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {num}
               </div>
-            ))}
+              <span className={`text-sm ${step >= num ? "text-foreground" : "text-muted-foreground"}`}>
+                {label}
+              </span>
+            </div>
+            {idx < 2 && (
+              <ChevronRight className="h-4 w-4 mx-2 text-muted-foreground" />
+            )}
           </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
 
       {/* Step 1: Upload CSV */}
       {step === 1 && (
-        <Card className="border-2 shadow-md">
-          <CardHeader className="bg-muted/30 border-b">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <FileText className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-xl">Upload do Arquivo CSV</CardTitle>
-                <CardDescription className="mt-1">Faça upload do arquivo com os contatos para disparo</CardDescription>
-              </div>
-            </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Upload do Arquivo CSV</CardTitle>
+            <CardDescription>Faça upload do arquivo com os contatos para disparo</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-3">
-              <Label htmlFor="csv-file" className="text-base">Arquivo CSV</Label>
-              <div className="border-2 border-dashed rounded-xl p-8 text-center hover:border-primary/50 transition-colors">
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="csv-file">Arquivo CSV</Label>
+              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
                 <Input
                   id="csv-file"
                   type="file"
@@ -356,10 +340,10 @@ export default function DisparoCSV() {
                   className="hidden"
                 />
                 <label htmlFor="csv-file" className="cursor-pointer">
-                  <Upload className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                  <p className="text-sm font-medium">Clique para fazer upload ou arraste aqui</p>
+                  <Upload className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm font-medium">Clique para fazer upload</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Formato: CSV com coluna "numero" (55DDDNÚMERO)
+                    Formato: CSV com coluna "numero"
                   </p>
                 </label>
               </div>
@@ -367,13 +351,13 @@ export default function DisparoCSV() {
 
             {csvData.length > 0 && (
               <>
-                <div className="bg-muted/50 p-6 rounded-xl space-y-4 border">
+                <div className="bg-muted/50 p-4 rounded-lg space-y-3 border">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-lg">Preview dos Dados</span>
-                    <Badge className="bg-primary">{csvData.length} linhas</Badge>
+                    <span className="font-semibold">Preview dos Dados</span>
+                    <Badge>{csvData.length} linhas</Badge>
                   </div>
                   <div className="text-sm">
-                    <strong>Colunas:</strong> <span className="font-mono text-primary">{headers.join(", ")}</span>
+                    <strong>Colunas:</strong> <span className="font-mono">{headers.join(", ")}</span>
                   </div>
                   <div className="mt-4 max-h-48 overflow-auto rounded-lg border bg-background">
                     <table className="w-full text-sm">
@@ -397,54 +381,41 @@ export default function DisparoCSV() {
                   </div>
                 </div>
 
-                {/* Validação Premium */}
+                {/* Validação */}
                 {validationResults && (
-                  <Card className={`border-2 ${
-                    validationResults.invalid > 0 ? 'border-warning/50 bg-warning/5' : 'border-success/50 bg-success/5'
-                  }`}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        {validationResults.invalid > 0 ? (
-                          <AlertCircle className="h-5 w-5 text-warning" />
-                        ) : (
-                          <CheckCircle2 className="h-5 w-5 text-success" />
-                        )}
-                        Validação de Números
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex gap-3">
-                        <Badge className="bg-success text-success-foreground">
-                          ✓ {validationResults.valid} válidos
-                        </Badge>
-                        {validationResults.invalid > 0 && (
-                          <Badge variant="destructive">
-                            ✗ {validationResults.invalid} inválidos
-                          </Badge>
-                        )}
-                      </div>
-                      
+                  <div className="bg-muted/50 p-4 rounded-lg border space-y-3">
+                    <div className="font-semibold text-sm">Validação de Números</div>
+                    <div className="flex gap-2">
+                      <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400">
+                        ✓ {validationResults.valid} válidos
+                      </Badge>
                       {validationResults.invalid > 0 && (
-                        <div className="max-h-40 overflow-y-auto space-y-2 p-4 bg-background rounded-lg border">
-                          <p className="text-sm font-medium mb-2">Números com problema:</p>
-                          {validationResults.details
-                            .filter(d => d.status === 'invalid')
-                            .slice(0, 10)
-                            .map((detail, idx) => (
-                              <div key={idx} className="flex justify-between text-sm p-2 bg-muted/50 rounded">
-                                <span>Linha {detail.row}: <span className="font-mono">{detail.phone}</span></span>
-                                <span className="text-destructive font-medium">{detail.reason}</span>
-                              </div>
-                            ))}
-                        </div>
+                        <Badge variant="destructive">
+                          ✗ {validationResults.invalid} inválidos
+                        </Badge>
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                    
+                    {validationResults.invalid > 0 && (
+                      <div className="max-h-32 overflow-y-auto space-y-1 text-xs">
+                        <p className="font-medium mb-1">Números com problema:</p>
+                        {validationResults.details
+                          .filter(d => d.status === 'invalid')
+                          .slice(0, 10)
+                          .map((detail, idx) => (
+                            <div key={idx} className="flex justify-between p-2 bg-background rounded">
+                              <span>Linha {detail.row}: <span className="font-mono">{detail.phone}</span></span>
+                              <span className="text-destructive">{detail.reason}</span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
                 )}
 
-                <Button onClick={() => setStep(2)} size="lg" className="w-full">
+                <Button onClick={() => setStep(2)} className="w-full">
                   Continuar para Configuração
-                  <ChevronRight className="ml-2 h-5 w-5" />
+                  <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </>
             )}
@@ -454,34 +425,26 @@ export default function DisparoCSV() {
 
       {/* Step 2: Configuração */}
       {step === 2 && (
-        <Card className="border-2 shadow-md">
-          <CardHeader className="bg-muted/30 border-b">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Settings className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-xl">Configuração da Campanha</CardTitle>
-                <CardDescription className="mt-1">Defina os parâmetros de envio</CardDescription>
-              </div>
-            </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Configuração da Campanha</CardTitle>
+            <CardDescription>Defina os parâmetros de envio</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="campaign-name" className="text-base">Nome da Campanha</Label>
+              <Label htmlFor="campaign-name">Nome da Campanha</Label>
               <Input
                 id="campaign-name"
-                placeholder="Ex: Black Friday 2025 - Ofertas"
+                placeholder="Ex: Black Friday 2025"
                 value={campaignName}
                 onChange={(e) => setCampaignName(e.target.value)}
-                className="text-base"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="whatsapp-number" className="text-base">Número WhatsApp *</Label>
+              <Label htmlFor="whatsapp-number">Número WhatsApp *</Label>
               <Select value={selectedNumber} onValueChange={setSelectedNumber}>
-                <SelectTrigger id="whatsapp-number" className="text-base">
+                <SelectTrigger id="whatsapp-number">
                   <SelectValue placeholder="Selecione o número..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -495,18 +458,18 @@ export default function DisparoCSV() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-base">Templates * (múltiplos para fallback)</Label>
-              <div className="border-2 rounded-xl p-4 space-y-2 max-h-60 overflow-y-auto bg-muted/30">
+              <Label>Templates * (múltiplos para fallback)</Label>
+              <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
                 {templates?.map((template) => (
                   <div
                     key={template.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+                    className={`flex items-center gap-2 p-2 rounded ${
                       selectedTemplates.includes(template.id)
-                        ? "bg-primary/10 border-2 border-primary"
-                        : "hover:bg-background border-2 border-transparent"
+                        ? "bg-primary/10 border border-primary"
+                        : "hover:bg-muted border border-transparent"
                     }`}
                   >
-                    <label className="flex items-center gap-3 flex-1 cursor-pointer">
+                    <label className="flex items-center gap-2 flex-1 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={selectedTemplates.includes(template.id)}
@@ -518,22 +481,22 @@ export default function DisparoCSV() {
                           }
                         }}
                         disabled={!selectedNumber}
-                        className="w-5 h-5 rounded border-2 text-primary focus:ring-primary"
+                        className="w-4 h-4"
                       />
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 text-sm">
                           <span className="font-medium">{template.name}</span>
                           {selectedTemplates.includes(template.id) && (
-                            <Badge className="bg-primary text-xs">
+                            <Badge variant="outline" className="text-xs">
                               #{selectedTemplates.indexOf(template.id) + 1}
                             </Badge>
                           )}
                           {template.mappings && Object.keys(template.mappings).length > 0 ? (
-                            <Badge variant="outline" className="text-xs border-success text-success">
+                            <Badge variant="outline" className="text-xs text-green-600">
                               ✓ Mapeado
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-xs border-warning text-warning">
+                            <Badge variant="outline" className="text-xs text-orange-600">
                               ! Sem mapeamento
                             </Badge>
                           )}
@@ -545,37 +508,30 @@ export default function DisparoCSV() {
                         variant="outline"
                         size="sm"
                         onClick={() => setMappingDialogTemplate(template)}
-                        className="shrink-0"
                       >
-                        <Settings className="h-4 w-4 mr-2" />
                         Mapear
                       </Button>
                     )}
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground flex items-start gap-2 mt-2">
-                <span>💡</span>
-                <span>Selecione múltiplos templates. Se o 1º falhar (pausado), tentará o 2º automaticamente.</span>
+              <p className="text-xs text-muted-foreground">
+                💡 Selecione múltiplos templates. Se o 1º falhar, tentará o 2º automaticamente.
               </p>
               
               {/* Aviso de mapeamento */}
               {selectedTemplates.length > 0 && !allHaveMappings && (
-                <div className="mt-3 p-3 bg-warning/10 border border-warning/30 rounded-lg flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
-                  <div className="text-xs text-warning-foreground">
-                    <p className="font-medium mb-1">⚠️ Mapeamento necessário</p>
-                    <p>
-                      Alguns templates selecionados ainda não têm mapeamento configurado. 
-                      Clique em <strong>"Mapear"</strong> ao lado de cada template para configurar como as variáveis serão preenchidas.
-                    </p>
-                  </div>
+                <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900 rounded text-xs">
+                  <p className="font-medium text-orange-700 dark:text-orange-400">⚠️ Mapeamento necessário</p>
+                  <p className="text-orange-600 dark:text-orange-500">
+                    Configure o mapeamento dos templates antes de continuar.
+                  </p>
                 </div>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="rate" className="text-base">Taxa de Envio (msg/segundo)</Label>
+              <Label htmlFor="rate">Taxa de Envio (msg/segundo)</Label>
               <Input
                 id="rate"
                 type="number"
@@ -583,25 +539,23 @@ export default function DisparoCSV() {
                 max="80"
                 value={rate}
                 onChange={(e) => setRate(Number(e.target.value))}
-                className="text-base"
               />
               <p className="text-xs text-muted-foreground">
-                ⚡ Recomendado: 40 msg/s (seguro) • Máximo: 80 msg/s
+                ⚡ Recomendado: 40 msg/s • Máximo: 80 msg/s
               </p>
             </div>
 
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep(1)} className="flex-1" size="lg">
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
                 Voltar
               </Button>
               <Button 
                 onClick={() => setStep(3)} 
                 disabled={!selectedNumber || selectedTemplates.length === 0}
                 className="flex-1"
-                size="lg"
               >
                 Próximo: Revisar
-                <ChevronRight className="ml-2 h-5 w-5" />
+                <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </CardContent>
@@ -610,60 +564,48 @@ export default function DisparoCSV() {
 
       {/* Step 3: Executar */}
       {step === 3 && (
-        <Card className="border-2 shadow-md">
-          <CardHeader className="bg-muted/30 border-b">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-success/10 rounded-lg">
-                <Send className="h-6 w-6 text-success" />
-              </div>
-              <div>
-                <CardTitle className="text-xl">Revisão Final</CardTitle>
-                <CardDescription className="mt-1">Confirme os dados antes de iniciar o envio</CardDescription>
-              </div>
-            </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Revisão Final</CardTitle>
+            <CardDescription>Confirme os dados antes de iniciar o envio</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="bg-muted/50 p-6 rounded-xl space-y-4 border-2">
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-muted-foreground">Nome da Campanha:</span>
+          <CardContent className="space-y-4">
+            <div className="bg-muted/50 p-4 rounded-lg space-y-3 border">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Nome da Campanha:</span>
                 <span className="font-semibold">{campaignName || "Sem nome"}</span>
               </div>
-              <div className="flex justify-between items-start">
-                <span className="font-medium text-muted-foreground">Templates:</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Templates:</span>
                 <div className="text-right space-y-1">
                   {selectedTemplateObjs.map((t, idx) => (
-                    <div key={t.id} className="flex items-center gap-2">
-                      <Badge variant="outline">#{idx + 1}</Badge>
-                      <span className="font-mono text-sm">{t.name}</span>
+                    <div key={t.id} className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs">#{idx + 1}</Badge>
+                      <span className="text-xs font-mono">{t.name}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-muted-foreground">Total de Envios:</span>
-                <span className="text-2xl font-bold text-primary">{csvData.length}</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total de Envios:</span>
+                <span className="text-xl font-bold text-primary">{csvData.length}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-muted-foreground">Taxa de Envio:</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Taxa de Envio:</span>
                 <span className="font-semibold">{rate} msg/s</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-muted-foreground">Tempo Estimado:</span>
-                <span className="font-semibold text-success">~{Math.ceil(csvData.length / rate)} segundos</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Tempo Estimado:</span>
+                <span className="font-semibold">~{Math.ceil(csvData.length / rate)} segundos</span>
               </div>
             </div>
 
             {/* Preview da Mensagem */}
             {selectedTemplateObjs.length > 0 && csvData.length > 0 && (
-              <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    📱 Preview da Mensagem no WhatsApp
-                  </CardTitle>
-                  <CardDescription>Exemplo com os dados da primeira linha do CSV</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 shadow-lg max-w-sm mx-auto">
+              <div className="border rounded-lg p-4 bg-muted/30">
+                <h4 className="font-semibold text-sm mb-3">Preview da Mensagem no WhatsApp</h4>
+                <p className="text-xs text-muted-foreground mb-3">Exemplo com os dados da primeira linha do CSV</p>
+                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 shadow-lg max-w-sm mx-auto">
                     {/* Bubble de mensagem do WhatsApp */}
                     <div className="bg-[#DCF8C6] dark:bg-[#005C4B] rounded-lg p-3 space-y-2">
                       {(() => {
@@ -750,40 +692,36 @@ export default function DisparoCSV() {
                       </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+              </div>
             )}
 
             {!allHaveMappings && (
-              <Card className="border-warning bg-warning/5">
-                <CardContent className="pt-4 flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
-                  <p className="text-sm text-warning-foreground">
-                    Alguns templates não possuem mapeamento configurado. As variáveis podem não ser preenchidas corretamente.
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="border border-orange-200 dark:border-orange-900 bg-orange-50 dark:bg-orange-950/30 p-3 rounded-lg flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5" />
+                <p className="text-sm text-orange-700 dark:text-orange-400">
+                  Alguns templates não possuem mapeamento configurado. As variáveis podem não ser preenchidas corretamente.
+                </p>
+              </div>
             )}
 
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep(2)} className="flex-1" size="lg">
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
                 Voltar
               </Button>
               <Button
                 onClick={() => createCampaignMutation.mutate()}
                 disabled={createCampaignMutation.isPending}
-                className="flex-1 bg-success hover:bg-success/90"
-                size="lg"
+                className="flex-1"
               >
                 {createCampaignMutation.isPending ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Iniciando Campanha...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Iniciando...
                   </>
                 ) : (
                   <>
-                    <Send className="mr-2 h-5 w-5" />
-                    🚀 Iniciar Campanha Agora
+                    <Send className="mr-2 h-4 w-4" />
+                    Iniciar Campanha
                   </>
                 )}
               </Button>

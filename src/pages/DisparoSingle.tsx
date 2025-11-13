@@ -101,24 +101,17 @@ export default function DisparoSingle() {
   });
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <Card className="border-2 shadow-md">
-        <CardHeader className="bg-muted/30 border-b">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Send className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-xl">Configuração do Envio</CardTitle>
-              <CardDescription className="mt-1">Preencha os dados para enviar a mensagem via template</CardDescription>
-            </div>
-          </div>
+    <div className="max-w-3xl">
+      <Card>
+        <CardHeader>
+          <CardTitle>Enviar Mensagem Individual</CardTitle>
+          <CardDescription>Preencha os dados abaixo para enviar uma mensagem via template</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="whatsapp-number" className="text-base">Número WhatsApp *</Label>
+            <Label htmlFor="whatsapp-number">Número WhatsApp *</Label>
             <Select value={selectedNumber} onValueChange={setSelectedNumber}>
-              <SelectTrigger id="whatsapp-number" className="h-12">
+              <SelectTrigger id="whatsapp-number">
                 <SelectValue placeholder="Selecione o número..." />
               </SelectTrigger>
               <SelectContent>
@@ -132,13 +125,13 @@ export default function DisparoSingle() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="template" className="text-base">Template *</Label>
+            <Label htmlFor="template">Template *</Label>
             <Select
               value={selectedTemplate}
               onValueChange={setSelectedTemplate}
               disabled={!selectedNumber}
             >
-              <SelectTrigger id="template" className="h-12">
+              <SelectTrigger id="template">
                 <SelectValue placeholder="Selecione o template..." />
               </SelectTrigger>
               <SelectContent>
@@ -152,31 +145,30 @@ export default function DisparoSingle() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone" className="text-base">Número de Destino *</Label>
+            <Label htmlFor="phone">Número de Destino *</Label>
             <Input
               id="phone"
               placeholder="5511999999999"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               disabled={!selectedTemplate}
-              className="h-12 font-mono"
+              className="font-mono"
             />
           </div>
 
           {allVariables.length > 0 && (
-            <div className="space-y-4 pt-4 border-t">
-              <h3 className="font-semibold">Variáveis do Template</h3>
+            <div className="space-y-3 pt-2 border-t">
+              <h3 className="font-semibold text-sm">Variáveis do Template</h3>
               {allVariables.map((variable) => (
                 <div key={variable.key} className="space-y-2">
-                  <Label htmlFor={variable.key}>{variable.label}</Label>
+                  <Label htmlFor={variable.key} className="text-sm">{variable.label}</Label>
                   <Input
                     id={variable.key}
-                    placeholder={`Digite o valor`}
+                    placeholder="Digite o valor"
                     value={parameters[variable.key] || ""}
                     onChange={(e) =>
                       setParameters((prev) => ({ ...prev, [variable.key]: e.target.value }))
                     }
-                    className="h-11"
                   />
                 </div>
               ))}
@@ -184,12 +176,10 @@ export default function DisparoSingle() {
           )}
 
           {selectedTemplateData && (
-            <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-5 rounded-xl border-2 border-primary/20">
-              <h4 className="font-semibold mb-3 flex items-center gap-2">
-                📱 <span>Preview da Mensagem</span>
-              </h4>
-              <div className="bg-background p-4 rounded-lg shadow-sm">
-                <p className="text-sm whitespace-pre-wrap">
+            <div className="bg-muted/50 p-4 rounded-lg border">
+              <h4 className="font-semibold text-sm mb-2">Preview da Mensagem</h4>
+              <div className="bg-background p-3 rounded border">
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground">
                   {structure?.body?.text || "Template sem corpo"}
                 </p>
               </div>
@@ -199,26 +189,26 @@ export default function DisparoSingle() {
           <Button
             onClick={() => sendMutation.mutate()}
             disabled={!selectedNumber || !selectedTemplate || !phoneNumber || sendMutation.isPending}
-            className="w-full h-12 text-base font-semibold"
+            className="w-full"
             size="lg"
           >
             {sendMutation.isPending ? (
               <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Enviando...
               </>
             ) : (
               <>
-                <Send className="mr-2 h-5 w-5" />
+                <Send className="mr-2 h-4 w-4" />
                 Enviar Mensagem
               </>
             )}
           </Button>
 
           {sendMutation.isSuccess && (
-            <div className="flex items-center gap-2 p-4 text-success bg-success/10 rounded-xl border border-success/20">
-              <CheckCircle className="h-5 w-5" />
-              <span className="font-medium">Mensagem enviada com sucesso!</span>
+            <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-lg border border-green-200 dark:border-green-900">
+              <CheckCircle className="h-4 w-4" />
+              <span className="text-sm font-medium">Mensagem enviada com sucesso!</span>
             </div>
           )}
         </CardContent>
