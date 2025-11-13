@@ -97,24 +97,93 @@ export default function DisparoCSV() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
-      const lines = text.split("\n").filter(line => line.trim());
       
-      // Detectar delimitador (vírgula ou ponto-e-vírgula)
-      const firstLine = lines[0];
+      // 🔧 Parser CSV que PRESERVA quebras de linha dentro de células entre aspas
+      const parseCSV = (csvText: string, delimiter: string) => {
+        const rows: string[][] = [];
+        let currentRow: string[] = [];
+        let currentCell = '';
+        let insideQuotes = false;
+        
+        for (let i = 0; i < csvText.length; i++) {
+          const char = csvText[i];
+          const nextChar = csvText[i + 1];
+          
+          if (char === '"') {
+            if (insideQuotes && nextChar === '"') {
+              // Aspas duplas escapadas: ""
+              currentCell += '"';
+              i++; // Pular próxima aspa
+            } else {
+              // Toggle aspas
+              insideQuotes = !insideQuotes;
+            }
+          } else if (char === delimiter && !insideQuotes) {
+            // Fim da célula
+            currentRow.push(currentCell.trim());
+            currentCell = '';
+          } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+            // Fim da linha (fora de aspas)
+            if (char === '\r' && nextChar === '\n') {
+              i++; // Pular \n do \r\n
+            }
+            if (currentCell || currentRow.length > 0) {
+              currentRow.push(currentCell.trim());
+              if (currentRow.some(cell => cell !== '')) {
+                rows.push(currentRow);
+              }
+              currentRow = [];
+              currentCell = '';
+            }
+          } else {
+            // Adicionar caractere à célula (incluindo \n dentro de aspas)
+            currentCell += char;
+          }
+        }
+        
+        // Última célula e linha
+        if (currentCell || currentRow.length > 0) {
+          currentRow.push(currentCell.trim());
+          if (currentRow.some(cell => cell !== '')) {
+            rows.push(currentRow);
+          }
+        }
+        
+        return rows;
+      };
+      
+      // Detectar delimitador
+      const firstNewline = text.indexOf('\n');
+      const firstLine = firstNewline > 0 ? text.substring(0, firstNewline) : text;
       const delimiter = firstLine.includes(';') ? ';' : ',';
       
-      const headers = firstLine.split(delimiter).map(h => h.trim());
+      // Parsear CSV preservando quebras de linha
+      const rows = parseCSV(text, delimiter);
       
-      const data = lines.slice(1)
-        .filter(line => line.trim())
-        .map(line => {
-          const values = line.split(delimiter);
-          const row: any = {};
-          headers.forEach((header, index) => {
-            row[header] = values[index]?.trim() || "";
-          });
-          return row;
+      if (rows.length === 0) {
+        toast({
+          title: "❌ Erro ao ler CSV",
+          description: "Arquivo CSV vazio ou inválido.",
+          variant: "destructive",
         });
+        return;
+      }
+      
+      const headers = rows[0].map(h => h.trim());
+      
+      const data = rows.slice(1).map(values => {
+        const row: any = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] || "";
+        });
+        return row;
+      });
+
+      console.log('📋 CSV parsed com sucesso:', {
+        headers,
+        totalRows: data.length,
+        firstRow: data[0],
+      });
 
       setHeaders(headers);
       setCsvData(data);
@@ -214,11 +283,17 @@ export default function DisparoCSV() {
           const mapping = mappings[varKey];
           if (mapping.type === "column" && mapping.value) {
             const value = row[mapping.value] || "";
+            
+            // 🐛 DEBUG: Log temporário para verificar quebras de linha
+            if (value.includes('\n')) {
+              console.log(`🔍 DEBUG ${varKey} contém quebras de linha:`, JSON.stringify(value));
+            }
+            
             // Se o parâmetro não pode ser vazio e está vazio, usar placeholder
             if (!value && !mapping.omitIfEmpty) {
               params[varKey] = "N/A";
             } else if (value) {
-              params[varKey] = value;
+              params[varKey] = value; // PRESERVAR valor exatamente como está
             } else {
               params[varKey] = "";
             }
