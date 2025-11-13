@@ -125,124 +125,207 @@ export function WhatsAppNumberDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      // Só fecha se clicar no botão Cancelar ou Salvar com sucesso
+      if (!newOpen && !saveMutation.isPending) {
+        onOpenChange(newOpen);
+      }
+    }}>
       <DialogContent 
         className="max-w-2xl max-h-[90vh] overflow-y-auto"
-        onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          // Impede fechar ao clicar fora
+          e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          // Impede fechar com ESC
+          e.preventDefault();
+        }}
       >
         <DialogHeader>
-          <DialogTitle>
-            {editingNumber ? "Editar Número WhatsApp" : "Adicionar Número WhatsApp"}
+          <DialogTitle className="text-xl flex items-center gap-2">
+            {editingNumber ? "✏️ Editar Número WhatsApp" : "➕ Adicionar Número WhatsApp"}
           </DialogTitle>
-          <DialogDescription>
-            Configure as credenciais da Meta (Facebook) para este número WhatsApp Business.
+          <DialogDescription className="text-base">
+            Configure as credenciais da Meta (Facebook Business Manager) para conectar este número WhatsApp Business.
+            Todos os campos marcados com * são obrigatórios.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome de Identificação *</Label>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="space-y-3">
+            <Label htmlFor="name" className="text-base font-semibold flex items-center gap-2">
+              📝 Nome de Identificação *
+            </Label>
             <Input
               id="name"
-              placeholder="Ex: Atendimento Principal"
+              placeholder="Ex: Atendimento Principal, Vendas, Suporte..."
               {...register("name", { required: "Nome é obrigatório" })}
+              className="h-12 text-base"
             />
             {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
+              <p className="text-sm text-destructive flex items-center gap-1">
+                ❌ {errors.name.message}
+              </p>
             )}
+            <p className="text-xs text-muted-foreground">
+              💡 Este é apenas um apelido interno para você identificar o número
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="phone_number_id">Phone Number ID *</Label>
+          <div className="space-y-3 p-4 bg-primary/5 rounded-xl border border-primary/20">
+            <Label htmlFor="phone_number_id" className="text-base font-semibold flex items-center gap-2">
+              🔢 Phone Number ID *
+            </Label>
             <Input
               id="phone_number_id"
               placeholder="123456789012345"
               {...register("phone_number_id", { 
                 required: "Phone Number ID é obrigatório" 
               })}
+              className="h-12 text-base font-mono"
             />
             {errors.phone_number_id && (
-              <p className="text-sm text-destructive">{errors.phone_number_id.message}</p>
+              <p className="text-sm text-destructive flex items-center gap-1">
+                ❌ {errors.phone_number_id.message}
+              </p>
             )}
-            <p className="text-xs text-muted-foreground">
-              Encontre no WhatsApp Manager → Configurações da API
-            </p>
+            <div className="bg-background/80 p-3 rounded-lg space-y-2">
+              <p className="text-xs font-semibold text-primary">📍 Onde encontrar:</p>
+              <ol className="text-xs text-muted-foreground space-y-1 ml-4 list-decimal">
+                <li>Acesse <strong>business.facebook.com</strong></li>
+                <li>Entre no <strong>WhatsApp Manager</strong></li>
+                <li>Vá em <strong>Configurações da API</strong></li>
+                <li>Copie o <strong>Phone Number ID</strong></li>
+              </ol>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="waba_id">WABA ID *</Label>
+          <div className="space-y-3 p-4 bg-success/5 rounded-xl border border-success/20">
+            <Label htmlFor="waba_id" className="text-base font-semibold flex items-center gap-2">
+              🏢 WABA ID *
+            </Label>
             <Input
               id="waba_id"
               placeholder="123456789012345"
               {...register("waba_id", { required: "WABA ID é obrigatório" })}
+              className="h-12 text-base font-mono"
             />
             {errors.waba_id && (
-              <p className="text-sm text-destructive">{errors.waba_id.message}</p>
+              <p className="text-sm text-destructive flex items-center gap-1">
+                ❌ {errors.waba_id.message}
+              </p>
             )}
-            <p className="text-xs text-muted-foreground">
-              WhatsApp Business Account ID
-            </p>
+            <div className="bg-background/80 p-3 rounded-lg">
+              <p className="text-xs font-semibold text-success mb-1">ℹ️ O que é WABA ID?</p>
+              <p className="text-xs text-muted-foreground">
+                WhatsApp Business Account ID - Identificador único da sua conta Business no WhatsApp Manager
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="access_token">Access Token (Meta) *</Label>
+          <div className="space-y-3 p-4 bg-warning/5 rounded-xl border border-warning/20">
+            <Label htmlFor="access_token" className="text-base font-semibold flex items-center gap-2">
+              🔐 Access Token (Meta) *
+            </Label>
             <Textarea
               id="access_token"
               placeholder="EAAxxxxxxxxxxxxx..."
-              className="font-mono text-xs"
-              rows={3}
+              className="font-mono text-xs h-24"
+              rows={4}
               {...register("access_token", { 
                 required: "Access Token é obrigatório" 
               })}
             />
             {errors.access_token && (
-              <p className="text-sm text-destructive">{errors.access_token.message}</p>
+              <p className="text-sm text-destructive flex items-center gap-1">
+                ❌ {errors.access_token.message}
+              </p>
             )}
-            <p className="text-xs text-muted-foreground">
-              Token de acesso permanente da Meta (System User Token)
-            </p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="business_account_id">Business Account ID</Label>
-              <Input
-                id="business_account_id"
-                placeholder="123456789012345"
-                {...register("business_account_id")}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone_number">Número de Telefone</Label>
-              <Input
-                id="phone_number"
-                placeholder="+55 11 98765-4321"
-                {...register("phone_number")}
-              />
+            <div className="bg-background/80 p-3 rounded-lg space-y-2">
+              <p className="text-xs font-semibold text-warning">🔑 Token Permanente:</p>
+              <p className="text-xs text-muted-foreground">
+                Use um <strong>System User Token</strong> permanente (não expira). Evite tokens de usuário comum que expiram em 60 dias.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                📍 Crie em: Business Manager → Usuários do Sistema → Gerar Token
+              </p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="display_name">Nome de Exibição</Label>
-            <Input
-              id="display_name"
-              placeholder="Nome que aparece no WhatsApp"
-              {...register("display_name")}
-            />
+          <div className="bg-muted/30 p-4 rounded-xl border border-border/40 space-y-4">
+            <p className="text-sm font-semibold text-muted-foreground">📋 Campos Opcionais (para referência)</p>
+            
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="business_account_id" className="text-sm flex items-center gap-1">
+                  🏪 Business Account ID
+                </Label>
+                <Input
+                  id="business_account_id"
+                  placeholder="123456789012345"
+                  {...register("business_account_id")}
+                  className="h-11 font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">ID da conta comercial (opcional)</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone_number" className="text-sm flex items-center gap-1">
+                  📱 Número de Telefone
+                </Label>
+                <Input
+                  id="phone_number"
+                  placeholder="+55 11 98765-4321"
+                  {...register("phone_number")}
+                  className="h-11 font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">Número completo com DDI</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="display_name" className="text-sm flex items-center gap-1">
+                👤 Nome de Exibição
+              </Label>
+              <Input
+                id="display_name"
+                placeholder="Nome que aparece no WhatsApp"
+                {...register("display_name")}
+                className="h-11 text-sm"
+              />
+              <p className="text-xs text-muted-foreground">Nome visível para seus clientes no WhatsApp</p>
+            </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                if (confirm("Deseja realmente cancelar? Os dados não salvos serão perdidos.")) {
+                  onOpenChange(false);
+                }
+              }}
+              className="flex items-center gap-2"
             >
-              Cancelar
+              ❌ Cancelar
             </Button>
-            <Button type="submit" disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? "Salvando..." : "Salvar"}
+            <Button 
+              type="submit" 
+              disabled={saveMutation.isPending}
+              className="flex items-center gap-2 shadow-lg"
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  ✅ Salvar Configuração
+                </>
+              )}
             </Button>
           </DialogFooter>
         </form>
