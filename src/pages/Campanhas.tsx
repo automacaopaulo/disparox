@@ -12,13 +12,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MessageSquare, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Search, Filter, Download, TrendingUp, BarChart3 } from "lucide-react";
+import { MessageSquare, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Search, Filter, Download, TrendingUp, BarChart3, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 import { ReprocessFailuresDialog } from "@/components/ReprocessFailuresDialog";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export default function Campanhas() {
   const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
@@ -387,6 +388,7 @@ function CampaignDetailsDialog({
   onOpenChange: (open: boolean) => void;
   onReprocess: () => void;
 }) {
+  const navigate = useNavigate();
   const { data: items } = useQuery({
     queryKey: ["campaign-items", campaign.id],
     queryFn: async () => {
@@ -426,16 +428,31 @@ function CampaignDetailsDialog({
               <BarChart3 className="h-6 w-6 text-primary" />
               {campaign.name}
             </span>
-            {campaign.failed > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onReprocess}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Reprocessar Falhas
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {campaign.failed > 0 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onOpenChange(false);
+                      navigate(`/campanhas/${campaign.id}/erros`);
+                    }}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Análise Detalhada
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onReprocess}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Reprocessar Falhas
+                  </Button>
+                </>
+              )}
+            </div>
           </DialogTitle>
           <DialogDescription>
             Análise detalhada e histórico completo da campanha
