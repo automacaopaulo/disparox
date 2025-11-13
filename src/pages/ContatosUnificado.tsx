@@ -30,16 +30,22 @@ export default function ContatosUnificado() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="contatos" className="mt-6">
-          <Contatos />
+        <TabsContent value="contatos" className="mt-6" forceMount>
+          <div className="data-[state=inactive]:hidden">
+            <Contatos />
+          </div>
         </TabsContent>
 
-        <TabsContent value="tags" className="mt-6">
-          <Tags />
+        <TabsContent value="tags" className="mt-6" forceMount>
+          <div className="data-[state=inactive]:hidden">
+            <Tags />
+          </div>
         </TabsContent>
 
-        <TabsContent value="segmentacao" className="mt-6">
-          <Segmentacao />
+        <TabsContent value="segmentacao" className="mt-6" forceMount>
+          <div className="data-[state=inactive]:hidden">
+            <Segmentacao />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

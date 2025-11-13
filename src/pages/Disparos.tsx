@@ -25,12 +25,16 @@ export default function Disparos() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="single" className="mt-6">
-          <DisparoSingle />
+        <TabsContent value="single" className="mt-6" forceMount>
+          <div className="data-[state=inactive]:hidden">
+            <DisparoSingle />
+          </div>
         </TabsContent>
 
-        <TabsContent value="csv" className="mt-6">
-          <DisparoCSV />
+        <TabsContent value="csv" className="mt-6" forceMount>
+          <div className="data-[state=inactive]:hidden">
+            <DisparoCSV />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
