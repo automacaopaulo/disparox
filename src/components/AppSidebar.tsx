@@ -84,13 +84,11 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end
-                      className="group flex items-center gap-2 rounded-md px-3 py-2
-                                 text-sm font-medium text-muted-foreground transition-colors
-                                 hover:bg-accent hover:text-foreground"
-                      activeClassName="bg-primary text-primary-foreground [&>svg]:text-primary-foreground"
+                      className="group flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors text-slate-300 dark:text-slate-300 hover:bg-accent hover:text-slate-100"
+                      activeClassName="bg-primary text-white dark:text-white font-semibold"
                     >
-                      <item.icon className="h-4 w-4 shrink-0 transition-colors" />
-                      <span className="truncate">{item.title}</span>
+                      <item.icon className="h-4 w-4 shrink-0 transition-colors text-slate-300 dark:text-slate-300 group-hover:text-slate-100" />
+                      <span className="truncate text-slate-300 dark:text-slate-300 group-hover:text-slate-100">{item.title}</span>
                     </NavLink>
                   </SidebarMenuItem>
                 ))}
