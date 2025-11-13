@@ -47,6 +47,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           contact_count?: number | null
@@ -56,6 +57,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           contact_count?: number | null
@@ -65,6 +67,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -144,6 +147,7 @@ export type Database = {
           template_name: string | null
           total_items: number | null
           updated_at: string | null
+          user_id: string | null
           whatsapp_number_id: string | null
         }
         Insert: {
@@ -162,6 +166,7 @@ export type Database = {
           template_name?: string | null
           total_items?: number | null
           updated_at?: string | null
+          user_id?: string | null
           whatsapp_number_id?: string | null
         }
         Update: {
@@ -180,6 +185,7 @@ export type Database = {
           template_name?: string | null
           total_items?: number | null
           updated_at?: string | null
+          user_id?: string | null
           whatsapp_number_id?: string | null
         }
         Relationships: [
@@ -344,6 +350,7 @@ export type Database = {
           opt_out_date: string | null
           opt_out_reason: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           cpf?: string | null
@@ -356,6 +363,7 @@ export type Database = {
           opt_out_date?: string | null
           opt_out_reason?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           cpf?: string | null
@@ -368,6 +376,7 @@ export type Database = {
           opt_out_date?: string | null
           opt_out_reason?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -434,6 +443,7 @@ export type Database = {
           trigger_keyword: string | null
           trigger_type: string
           updated_at: string | null
+          user_id: string | null
           whatsapp_number_id: string | null
         }
         Insert: {
@@ -447,6 +457,7 @@ export type Database = {
           trigger_keyword?: string | null
           trigger_type: string
           updated_at?: string | null
+          user_id?: string | null
           whatsapp_number_id?: string | null
         }
         Update: {
@@ -460,6 +471,7 @@ export type Database = {
           trigger_keyword?: string | null
           trigger_type?: string
           updated_at?: string | null
+          user_id?: string | null
           whatsapp_number_id?: string | null
         }
         Relationships: [
@@ -561,18 +573,21 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
+          user_id: string | null
         }
         Insert: {
           color?: string
           created_at?: string | null
           id?: string
           name: string
+          user_id?: string | null
         }
         Update: {
           color?: string
           created_at?: string | null
           id?: string
           name?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -587,6 +602,7 @@ export type Database = {
           status: string
           structure: Json
           updated_at: string | null
+          user_id: string | null
           whatsapp_number_id: string | null
         }
         Insert: {
@@ -599,6 +615,7 @@ export type Database = {
           status?: string
           structure?: Json
           updated_at?: string | null
+          user_id?: string | null
           whatsapp_number_id?: string | null
         }
         Update: {
@@ -611,6 +628,7 @@ export type Database = {
           status?: string
           structure?: Json
           updated_at?: string | null
+          user_id?: string | null
           whatsapp_number_id?: string | null
         }
         Relationships: [
@@ -622,6 +640,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
       webhook_events: {
         Row: {
@@ -663,6 +702,7 @@ export type Database = {
           phone_number_id: string
           quality_rating: string | null
           updated_at: string
+          user_id: string | null
           waba_id: string
         }
         Insert: {
@@ -677,6 +717,7 @@ export type Database = {
           phone_number_id: string
           quality_rating?: string | null
           updated_at?: string
+          user_id?: string | null
           waba_id: string
         }
         Update: {
@@ -691,6 +732,7 @@ export type Database = {
           phone_number_id?: string
           quality_rating?: string | null
           updated_at?: string
+          user_id?: string | null
           waba_id?: string
         }
         Relationships: []
@@ -700,10 +742,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "operator" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -830,6 +878,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "operator", "viewer"],
+    },
   },
 } as const
