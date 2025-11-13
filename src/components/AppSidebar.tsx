@@ -94,14 +94,15 @@ export function AppSidebar() {
               <SidebarMenu className="gap-1">
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild tooltip={item.title} className="group relative">
+                    <SidebarMenuButton asChild tooltip={item.title}>
                       <NavLink 
                         to={item.url} 
                         end
-                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-all hover:bg-accent/50 hover:text-sidebar-foreground data-[active]:bg-primary/10 data-[active]:text-primary data-[active]:shadow-sm"
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-all hover:bg-accent/50 hover:text-sidebar-foreground"
+                        activeClassName="bg-primary/10 text-primary shadow-sm [&>span:first-child]:opacity-100"
                       >
                         {/* Active Indicator */}
-                        <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary opacity-0 transition-opacity group-data-[active]:opacity-100" />
+                        <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary opacity-0 transition-opacity" />
                         
                         <item.icon className="h-[18px] w-[18px] shrink-0 transition-transform group-hover:scale-110" />
                         {open && <span className="truncate">{item.title}</span>}
