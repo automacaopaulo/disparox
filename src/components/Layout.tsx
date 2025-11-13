@@ -3,6 +3,7 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Logo } from "@/components/Logo";
 
 interface LayoutProps {
   children: ReactNode;
@@ -18,12 +19,7 @@ export function Layout({ children }: LayoutProps) {
             <SidebarTrigger className="hover:bg-accent/50 transition-colors" />
             <Separator orientation="vertical" className="h-6" />
             <div className="flex items-center gap-3 flex-1">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
-                <span className="text-lg font-bold text-primary">D</span>
-              </div>
-              <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                DisparoX
-              </h1>
+              <Logo showText={true} />
             </div>
             <ThemeToggle />
           </header>

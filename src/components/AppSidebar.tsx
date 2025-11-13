@@ -1,5 +1,6 @@
 import { Home, Phone, Send, List, MessageSquare, Users, FileText, Layers, Settings, BarChart3, Calculator, Globe, UserX, Workflow, Tag, Target, Bot } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { Logo } from "@/components/Logo";
 
 import {
   Sidebar,
@@ -70,16 +71,8 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border/40">
       <SidebarContent className="gap-0">
         {/* Logo Section */}
-        <div className="flex h-16 items-center gap-3 border-b border-border/40 px-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-sm">
-            <span className="text-lg font-bold text-primary-foreground">D</span>
-          </div>
-          {open && (
-            <div className="flex flex-col">
-              <span className="text-sm font-bold tracking-tight">DisparoX</span>
-              <span className="text-xs text-muted-foreground">WhatsApp API</span>
-            </div>
-          )}
+        <div className="flex h-16 items-center justify-center border-b border-border/40 px-4">
+          <Logo showText={open} className="transition-all duration-200" />
         </div>
 
         {/* Menu Groups */}
