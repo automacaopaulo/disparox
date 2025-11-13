@@ -74,7 +74,7 @@ export function AppSidebar() {
         {/* Menu Groups */}
         {menuGroups.map((group, groupIndex) => (
           <SidebarGroup key={group.label} className="px-3 py-4">
-            <SidebarGroupLabel className="px-3 text-[11px] font-semibold tracking-[0.16em] text-muted-foreground/70 uppercase mb-2">
+            <SidebarGroupLabel className="px-3 text-[11px] font-semibold tracking-[0.16em] uppercase mb-2" style={{ color: '#94A3B8' }}>
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -84,12 +84,11 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end
-                      className="group flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent [&.active]:!text-white [&.active>svg]:!text-white [&.active>span]:!text-white"
-                      style={{ color: '#CBD5E1' }}
-                      activeClassName="active bg-primary font-semibold"
+                      className="group flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+                      activeClassName="!bg-primary [&>svg]:!text-white [&>span]:!text-white"
                     >
-                      <item.icon className="h-4 w-4 shrink-0 transition-colors" style={{ color: 'inherit' }} />
-                      <span className="truncate" style={{ color: 'inherit' }}>{item.title}</span>
+                      <item.icon className="h-4 w-4 shrink-0 transition-colors" style={{ color: '#E2E8F0' }} />
+                      <span className="truncate" style={{ color: '#E2E8F0', fontWeight: '500' }}>{item.title}</span>
                     </NavLink>
                   </SidebarMenuItem>
                 ))}
