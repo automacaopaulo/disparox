@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LayoutThemeProvider } from "./contexts/LayoutThemeContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { Layout } from "@/components/Layout";
+import { SimpleLayout } from "@/components/SimpleLayout";
 import Index from "./pages/Index";
 import WhatsAppNumbers from "./pages/WhatsAppNumbers";
 import Templates from "./pages/Templates";
@@ -43,7 +43,7 @@ const App = () => (
               path="*"
               element={
                 <ProtectedRoute>
-                  <Layout>
+                  <SimpleLayout>
                     <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/numeros" element={<WhatsAppNumbers />} />
@@ -64,7 +64,7 @@ const App = () => (
                       <Route path="/configuracoes" element={<Configuracoes />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
-                  </Layout>
+                  </SimpleLayout>
                 </ProtectedRoute>
               }
             />
