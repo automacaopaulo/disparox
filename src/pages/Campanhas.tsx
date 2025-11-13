@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MessageSquare, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Search, Filter, Download } from "lucide-react";
+import { MessageSquare, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Search, Filter, Download, TrendingUp, BarChart3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
@@ -40,7 +40,6 @@ export default function Campanhas() {
     },
   });
 
-  // Realtime para atualizações
   useEffect(() => {
     const channel = supabase
       .channel("campaigns-changes")
@@ -52,7 +51,6 @@ export default function Campanhas() {
           table: "campaigns",
         },
         () => {
-          // Revalidar queries quando houver mudanças
           supabase.from("campaigns").select("*").order("created_at", { ascending: false });
         }
       )
@@ -65,19 +63,15 @@ export default function Campanhas() {
 
   const { toast } = useToast();
 
-  // Filtrar campanhas
   const filteredCampaigns = campaigns?.filter(campaign => {
-    // Filtro de busca
     if (searchQuery && !campaign.name.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
     
-    // Filtro de status
     if (statusFilter !== "all" && campaign.status !== statusFilter) {
       return false;
     }
     
-    // Filtro de data
     if (dateFilter !== "all") {
       const campaignDate = new Date(campaign.created_at);
       const now = new Date();
@@ -98,7 +92,6 @@ export default function Campanhas() {
     return true;
   });
 
-  // Exportar para CSV
   const exportToCSV = () => {
     if (!filteredCampaigns) return;
     
@@ -124,7 +117,7 @@ export default function Campanhas() {
     a.click();
     
     toast({
-      title: "Exportado!",
+      title: "✅ Exportado!",
       description: "Relatório de campanhas baixado.",
     });
   };
@@ -132,13 +125,13 @@ export default function Campanhas() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-        return "bg-green-500";
+        return "bg-success text-success-foreground";
       case "processing":
-        return "bg-blue-500";
+        return "bg-primary text-primary-foreground";
       case "failed":
-        return "bg-red-500";
+        return "bg-destructive text-destructive-foreground";
       default:
-        return "bg-gray-500";
+        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -158,25 +151,31 @@ export default function Campanhas() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold">Campanhas</h2>
-        <p className="text-muted-foreground mt-1">
-          Acompanhe suas campanhas de disparo em massa
+    <div className="space-y-6 max-w-[1400px] mx-auto">
+      {/* Header Premium */}
+      <div className="section-header">
+        <h1 className="section-title flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-xl">
+            <MessageSquare className="h-7 w-7 text-primary" />
+          </div>
+          Campanhas
+        </h1>
+        <p className="section-description">
+          Acompanhe e analise todas as campanhas de disparo em massa
         </p>
       </div>
 
-      {/* Filtros */}
-      <Card>
+      {/* Filtros Premium */}
+      <Card className="premium-card">
         <CardContent className="pt-6">
           <div className="grid gap-4 md:grid-cols-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome..."
+                placeholder="Buscar campanhas..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-10"
               />
             </div>
             
@@ -214,34 +213,49 @@ export default function Campanhas() {
       </Card>
 
       {isLoading && (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+            <p className="text-sm text-muted-foreground">Carregando campanhas...</p>
+          </div>
         </div>
       )}
 
       {!isLoading && filteredCampaigns && filteredCampaigns.length === 0 && campaigns && campaigns.length === 0 && (
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">
-              Nenhuma campanha criada ainda. Use "Disparo CSV" para criar sua primeira campanha.
-            </p>
+        <Card className="premium-card">
+          <CardContent className="pt-16 pb-16 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-4 bg-muted/50 rounded-2xl">
+                <MessageSquare className="h-16 w-16 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-1">Nenhuma campanha criada</h3>
+                <p className="text-muted-foreground">
+                  Use "Disparo CSV" para criar sua primeira campanha em massa
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {!isLoading && filteredCampaigns && filteredCampaigns.length === 0 && campaigns && campaigns.length > 0 && (
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Filter className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">
-              Nenhuma campanha encontrada com os filtros aplicados.
-            </p>
+        <Card className="premium-card">
+          <CardContent className="pt-16 pb-16 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <Filter className="h-16 w-16 text-muted-foreground" />
+              <div>
+                <h3 className="text-lg font-semibold mb-1">Nenhuma campanha encontrada</h3>
+                <p className="text-muted-foreground">
+                  Ajuste os filtros para ver mais resultados
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
 
-      <div className="grid gap-4">
+      <div className="grid gap-6">
         {filteredCampaigns?.map((campaign) => {
           const progress =
             campaign.total_items > 0
@@ -255,16 +269,21 @@ export default function Campanhas() {
           return (
             <Card
               key={campaign.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
+              className="premium-card cursor-pointer hover:shadow-xl hover:scale-[1.01] transition-all duration-200"
               onClick={() => setSelectedCampaign(campaign)}
             >
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{campaign.name}</CardTitle>
-                    <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      {format(new Date(campaign.created_at), "dd/MM/yyyy HH:mm")}
+                  <div className="flex-1 space-y-2">
+                    <CardTitle className="text-xl">{campaign.name}</CardTitle>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-4 w-4" />
+                        {format(new Date(campaign.created_at), "dd/MM/yyyy 'às' HH:mm")}
+                      </div>
+                      <Badge variant="outline" className="font-mono">
+                        {campaign.template_name}
+                      </Badge>
                     </div>
                   </div>
                   <Badge className={getStatusColor(campaign.status)}>
@@ -272,54 +291,64 @@ export default function Campanhas() {
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-4 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold">{campaign.total_items}</div>
-                    <div className="text-xs text-muted-foreground">Total</div>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-4 gap-6">
+                  <div className="text-center p-4 bg-muted/30 rounded-xl">
+                    <div className="text-3xl font-bold">{campaign.total_items}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Total</div>
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold text-green-600">
+                  <div className="text-center p-4 bg-success/10 rounded-xl">
+                    <div className="text-3xl font-bold text-success">
                       {campaign.sent}
                     </div>
-                    <div className="text-xs text-muted-foreground">Enviados</div>
+                    <div className="text-xs text-muted-foreground mt-1">Enviados</div>
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-center p-4 bg-primary/10 rounded-xl">
+                    <div className="text-3xl font-bold text-primary">
                       {campaign.delivered}
                     </div>
-                    <div className="text-xs text-muted-foreground">Entregues</div>
+                    <div className="text-xs text-muted-foreground mt-1">Entregues</div>
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold text-red-600">
+                  <div className="text-center p-4 bg-destructive/10 rounded-xl">
+                    <div className="text-3xl font-bold text-destructive">
                       {campaign.failed}
                     </div>
-                    <div className="text-xs text-muted-foreground">Falhas</div>
+                    <div className="text-xs text-muted-foreground mt-1">Falhas</div>
                   </div>
                 </div>
 
                 {campaign.status === "processing" && (
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Progresso</span>
-                      <span>{progress.toFixed(1)}%</span>
+                    <div className="flex justify-between text-sm font-medium">
+                      <span className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        Progresso
+                      </span>
+                      <span className="text-primary">{progress.toFixed(1)}%</span>
                     </div>
-                    <Progress value={progress} />
+                    <Progress value={progress} className="h-2" />
                   </div>
                 )}
 
                 {campaign.status === "completed" && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span>
-                      Taxa de sucesso: {successRate.toFixed(1)}%
+                  <div className="flex items-center justify-between p-4 bg-success/10 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-success" />
+                      <span className="font-medium">Campanha Concluída</span>
+                    </div>
+                    <span className="text-lg font-bold text-success">
+                      {successRate.toFixed(1)}% sucesso
                     </span>
                   </div>
                 )}
 
-                <div className="flex gap-2 text-xs">
-                  <Badge variant="outline">{campaign.template_name}</Badge>
-                  <Badge variant="outline">{campaign.processing_rate || 40} msg/s</Badge>
+                <div className="flex gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {campaign.processing_rate || 40} msg/s
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {campaign.read || 0} lidas
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
@@ -377,26 +406,27 @@ function CampaignDetailsDialog({
   const errorSummary = campaign.error_summary || {};
   const errorEntries = Object.entries(errorSummary);
 
-  // Preparar dados para o gráfico de erros
   const errorChartData = errorEntries.map(([code, count]) => ({
     code: `Erro ${code}`,
     quantidade: Number(count),
   }));
 
-  const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16'];
+  const COLORS = ['hsl(var(--destructive))', '#f97316', '#f59e0b', '#eab308', '#84cc16'];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span>{campaign.name}</span>
+            <span className="flex items-center gap-2">
+              <BarChart3 className="h-6 w-6 text-primary" />
+              {campaign.name}
+            </span>
             {campaign.failed > 0 && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onReprocess}
-                className="ml-4"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Reprocessar Falhas
@@ -404,58 +434,64 @@ function CampaignDetailsDialog({
             )}
           </DialogTitle>
           <DialogDescription>
-            Detalhes completos da campanha
+            Análise detalhada e histórico completo da campanha
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Estatísticas */}
-          <Card>
+          {/* Estatísticas Premium */}
+          <Card className="premium-card">
             <CardHeader>
-              <CardTitle className="text-base">Estatísticas</CardTitle>
+              <CardTitle className="text-lg">📊 Estatísticas Gerais</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-5 gap-4 text-center">
-              <div>
+            <CardContent className="grid grid-cols-5 gap-4">
+              <div className="text-center p-4 bg-muted/30 rounded-xl">
                 <div className="text-2xl font-bold">{campaign.total_items}</div>
-                <div className="text-xs text-muted-foreground">Total</div>
+                <div className="text-xs text-muted-foreground mt-1">Total</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">{campaign.sent}</div>
-                <div className="text-xs text-muted-foreground">Enviados</div>
+              <div className="text-center p-4 bg-success/10 rounded-xl">
+                <div className="text-2xl font-bold text-success">{campaign.sent}</div>
+                <div className="text-xs text-muted-foreground mt-1">Enviados</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-600">
+              <div className="text-center p-4 bg-primary/10 rounded-xl">
+                <div className="text-2xl font-bold text-primary">
                   {campaign.delivered}
                 </div>
-                <div className="text-xs text-muted-foreground">Entregues</div>
+                <div className="text-xs text-muted-foreground mt-1">Entregues</div>
               </div>
-              <div>
+              <div className="text-center p-4 bg-purple-500/10 rounded-xl">
                 <div className="text-2xl font-bold text-purple-600">{campaign.read}</div>
-                <div className="text-xs text-muted-foreground">Lidos</div>
+                <div className="text-xs text-muted-foreground mt-1">Lidos</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-red-600">{campaign.failed}</div>
-                <div className="text-xs text-muted-foreground">Falhas</div>
+              <div className="text-center p-4 bg-destructive/10 rounded-xl">
+                <div className="text-2xl font-bold text-destructive">{campaign.failed}</div>
+                <div className="text-xs text-muted-foreground mt-1">Falhas</div>
               </div>
             </CardContent>
           </Card>
 
           {/* Gráfico de Erros */}
           {errorEntries.length > 0 && (
-            <Card>
+            <Card className="premium-card border-warning/20">
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-yellow-600" />
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <AlertCircle className="h-5 w-5 text-warning" />
                   Análise de Erros
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={errorChartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="code" />
-                    <YAxis />
-                    <Tooltip />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="code" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        background: 'hsl(var(--popover))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '0.75rem',
+                      }}
+                    />
                     <Bar dataKey="quantidade" fill="hsl(var(--destructive))">
                       {errorChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -468,9 +504,9 @@ function CampaignDetailsDialog({
                   {errorEntries.map(([code, count]) => (
                     <div
                       key={code}
-                      className="flex justify-between items-center p-2 bg-muted rounded"
+                      className="flex justify-between items-center p-3 bg-muted/30 rounded-xl"
                     >
-                      <span className="text-sm font-medium">Código {code}</span>
+                      <span className="font-medium">Código de Erro {code}</span>
                       <Badge variant="destructive">{String(count)} ocorrências</Badge>
                     </div>
                   ))}
@@ -480,32 +516,32 @@ function CampaignDetailsDialog({
           )}
 
           {/* Items da campanha */}
-          <Card>
+          <Card className="premium-card">
             <CardHeader>
-              <CardTitle className="text-base">Últimas Mensagens</CardTitle>
+              <CardTitle className="text-lg">📝 Últimas Mensagens Enviadas</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-2 max-h-80 overflow-y-auto">
                 {items?.map((item) => (
                   <div
                     key={item.id}
-                    className="flex justify-between items-center p-2 border-b last:border-0"
+                    className="flex justify-between items-center p-3 rounded-lg border hover:bg-muted/30 transition-colors"
                   >
                     <div className="flex-1">
-                      <div className="font-mono text-sm">{item.msisdn}</div>
+                      <div className="font-mono text-sm font-medium">{item.msisdn}</div>
                       {item.error_message && (
-                        <div className="text-xs text-red-600 mt-1">
+                        <div className="text-xs text-destructive mt-1">
                           {item.error_message}
                         </div>
                       )}
                     </div>
                     <Badge
-                      variant={
+                      className={
                         item.status === "sent" || item.status === "delivered"
-                          ? "default"
+                          ? "bg-success"
                           : item.status === "failed"
-                          ? "destructive"
-                          : "secondary"
+                          ? "bg-destructive"
+                          : "bg-muted"
                       }
                     >
                       {item.status}

@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Phone, Send, CheckCircle, XCircle, AlertCircle, TrendingUp, Clock } from "lucide-react";
+import { Phone, Send, CheckCircle, XCircle, AlertCircle, TrendingUp, Clock, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { LineChart, Line, PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export default function Dashboard() {
-  const { data: stats } = useQuery({
+  const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
       const [numbersRes, campaignsRes, messagesRes, templatesRes] = await Promise.all([
@@ -74,10 +73,10 @@ export default function Dashboard() {
 
       // Gráfico de pizza - distribuição de status
       const statusDistribution = [
-        { name: 'Enviados', value: totalSent, color: '#10b981' },
-        { name: 'Entregues', value: totalDelivered, color: '#3b82f6' },
+        { name: 'Enviados', value: totalSent, color: 'hsl(var(--primary))' },
+        { name: 'Entregues', value: totalDelivered, color: 'hsl(var(--success))' },
         { name: 'Lidos', value: totalRead, color: '#8b5cf6' },
-        { name: 'Falhas', value: totalFailed, color: '#ef4444' },
+        { name: 'Falhas', value: totalFailed, color: 'hsl(var(--destructive))' },
       ].filter(item => item.value > 0);
 
       return {
@@ -105,28 +104,47 @@ export default function Dashboard() {
     },
   });
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+          <p className="text-sm text-muted-foreground">Carregando métricas...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold">Dashboard</h2>
-        <p className="text-muted-foreground mt-1">
-          Visão geral do sistema de disparos WhatsApp
+    <div className="space-y-6 max-w-[1400px] mx-auto">
+      {/* Header */}
+      <div className="section-header">
+        <h1 className="section-title flex items-center gap-3">
+          <Activity className="h-8 w-8 text-primary" />
+          Dashboard
+        </h1>
+        <p className="section-description">
+          Visão geral e métricas em tempo real do seu sistema WhatsApp
         </p>
       </div>
 
-      {/* Métricas principais */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Números Ativos</CardTitle>
-            <Phone className="h-4 w-4 text-muted-foreground" />
+      {/* KPIs Principais - Gigantes */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="premium-card hover:shadow-xl transition-all duration-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Números Ativos
+            </CardTitle>
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Phone className="h-5 w-5 text-primary" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="stat-value text-primary">
               {stats?.activeNumbers || 0}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Total de {stats?.totalNumbers || 0} cadastrados
+            <p className="text-sm text-muted-foreground">
+              de {stats?.totalNumbers || 0} cadastrados
             </p>
             {stats?.lowQualityNumbers ? (
               <Badge variant="destructive" className="mt-2">
@@ -136,135 +154,181 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Templates Ativos</CardTitle>
-            <Send className="h-4 w-4 text-muted-foreground" />
+        <Card className="premium-card hover:shadow-xl transition-all duration-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Templates Ativos
+            </CardTitle>
+            <div className="p-2 bg-success/10 rounded-lg">
+              <Send className="h-5 w-5 text-success" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="stat-value text-success">
               {stats?.activeTemplates || 0}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Total de {stats?.totalTemplates || 0} templates
+            <p className="text-sm text-muted-foreground">
+              de {stats?.totalTemplates || 0} templates
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Campanhas Ativas</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+        <Card className="premium-card hover:shadow-xl transition-all duration-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Campanhas Ativas
+            </CardTitle>
+            <div className="p-2 bg-warning/10 rounded-lg">
+              <Clock className="h-5 w-5 text-warning" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="stat-value text-warning">
               {stats?.campaignsActive || 0}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Total de {stats?.totalCampaigns || 0} campanhas
+            <p className="text-sm text-muted-foreground">
+              de {stats?.totalCampaigns || 0} campanhas
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Mensagens Hoje</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        <Card className="premium-card hover:shadow-xl transition-all duration-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Mensagens Hoje
+            </CardTitle>
+            <div className="p-2 bg-purple-500/10 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-purple-600" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="space-y-1">
+            <div className="stat-value text-purple-600">
               {stats?.messagesToday || 0}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Total geral: {stats?.totalMessages || 0}
+            <p className="text-sm text-muted-foreground">
+              Total: {stats?.totalMessages || 0}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Estatísticas de entrega */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Sucesso</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
+      {/* Taxas de Performance */}
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="premium-card border-success/20">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Taxa de Sucesso
+            </CardTitle>
+            <CheckCircle className="h-5 w-5 text-success" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+          <CardContent className="space-y-1">
+            <div className="stat-value text-success">
               {stats?.successRate || 0}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats?.totalSent || 0} enviados / {stats?.totalFailed || 0} falhas
+            <p className="text-xs text-muted-foreground">
+              {stats?.totalSent || 0} enviados • {stats?.totalFailed || 0} falhas
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Entrega</CardTitle>
-            <CheckCircle className="h-4 w-4 text-blue-500" />
+        <Card className="premium-card border-primary/20">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Taxa de Entrega
+            </CardTitle>
+            <CheckCircle className="h-5 w-5 text-primary" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+          <CardContent className="space-y-1">
+            <div className="stat-value text-primary">
               {stats?.deliveryRate || 0}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats?.totalDelivered || 0} entregues
+            <p className="text-xs text-muted-foreground">
+              {stats?.totalDelivered || 0} mensagens entregues
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Leitura</CardTitle>
-            <CheckCircle className="h-4 w-4 text-purple-500" />
+        <Card className="premium-card border-purple-500/20">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Taxa de Leitura
+            </CardTitle>
+            <CheckCircle className="h-5 w-5 text-purple-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+          <CardContent className="space-y-1">
+            <div className="stat-value text-purple-600">
               {stats?.readRate || 0}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats?.totalRead || 0} lidas
+            <p className="text-xs text-muted-foreground">
+              {stats?.totalRead || 0} mensagens lidas
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Gráficos */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Gráfico de Linha - Mensagens por Dia */}
-        <Card>
+      {/* Gráficos Profissionais */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Gráfico de Linha - Volume */}
+        <Card className="premium-card">
           <CardHeader>
-            <CardTitle className="text-base">Mensagens - Últimos 7 Dias</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Volume de Mensagens
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">Últimos 7 dias</p>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={280}>
               <LineChart data={stats?.messagesPerDay || []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="mensagens" stroke="hsl(var(--primary))" strokeWidth={2} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="day" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                />
+                <YAxis 
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    background: 'hsl(var(--popover))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '0.75rem',
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="mensagens" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={3}
+                  dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Gráfico de Pizza - Distribuição de Status */}
-        <Card>
+        {/* Gráfico de Pizza - Distribuição */}
+        <Card className="premium-card">
           <CardHeader>
-            <CardTitle className="text-base">Distribuição de Status</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-success" />
+              Distribuição de Status
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">Performance geral</p>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
                   data={stats?.statusDistribution || []}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={(entry) => entry.name}
-                  outerRadius={70}
+                  label={(entry) => `${entry.name} (${entry.value})`}
+                  outerRadius={90}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -279,43 +343,48 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Alertas e próximos passos */}
-      <Card>
+      {/* Alertas Premium */}
+      <Card className={`premium-card ${stats?.lowQualityNumbers ? 'border-warning bg-warning/5' : 'border-primary/20 bg-primary/5'}`}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            {stats?.lowQualityNumbers ? "Alertas e Ações" : "Próximos Passos"}
+            <AlertCircle className={`h-5 w-5 ${stats?.lowQualityNumbers ? 'text-warning' : 'text-primary'}`} />
+            {stats?.lowQualityNumbers ? "⚠️ Atenção Imediata" : "✨ Próximos Passos"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {stats?.lowQualityNumbers && stats.lowQualityNumbers > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded text-sm">
-              <strong className="text-yellow-800">⚠️ Atenção:</strong>
-              <span className="text-yellow-700">
-                {" "}Você tem {stats.lowQualityNumbers} número(s) com quality rating baixo. 
-                Verifique em "Números WhatsApp".
-              </span>
+            <div className="flex items-start gap-3 p-4 bg-warning/10 border border-warning/20 rounded-xl">
+              <AlertCircle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-warning-foreground">
+                  Números com qualidade baixa detectados
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {stats.lowQualityNumbers} número(s) precisam de atenção. Verifique na página "Números WhatsApp" para evitar bloqueios.
+                </p>
+              </div>
             </div>
           )}
 
           {(!stats?.totalNumbers || stats.totalNumbers === 0) && (
-            <p className="text-sm">
-              📱 <strong>Configure seu primeiro número WhatsApp</strong> em "Números WhatsApp"
+            <p className="text-sm flex items-center gap-2">
+              <span className="text-2xl">📱</span>
+              <span><strong>Configure seu primeiro número WhatsApp</strong> para começar a enviar mensagens</span>
             </p>
           )}
           
           {stats?.totalNumbers && stats.totalNumbers > 0 && !stats?.totalTemplates && (
-            <p className="text-sm">
-              📄 <strong>Sincronize seus templates</strong> na página "Templates"
+            <p className="text-sm flex items-center gap-2">
+              <span className="text-2xl">📄</span>
+              <span><strong>Sincronize seus templates</strong> da Meta para habilitar os disparos</span>
             </p>
           )}
 
           {stats?.activeTemplates && stats.activeTemplates > 0 && (
-            <>
-              <p className="text-sm">
-                ✅ Sistema configurado! Use "Disparo 1:1" ou "Disparo CSV" para começar.
-              </p>
-            </>
+            <p className="text-sm flex items-center gap-2">
+              <span className="text-2xl">✅</span>
+              <span><strong>Sistema pronto!</strong> Use "Disparo CSV" ou "Disparo 1:1" para enviar campanhas</span>
+            </p>
           )}
         </CardContent>
       </Card>

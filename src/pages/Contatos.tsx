@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Users, Search } from "lucide-react";
+import { Users, Search, UserCircle } from "lucide-react";
 import { format } from "date-fns";
 
 export default function Contatos() {
@@ -30,15 +30,20 @@ export default function Contatos() {
   });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold">Contatos</h2>
-        <p className="text-muted-foreground mt-1">
-          Gerencie sua base de contatos WhatsApp
+    <div className="space-y-6 max-w-[1400px] mx-auto">
+      <div className="section-header">
+        <h1 className="section-title flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-xl">
+            <Users className="h-7 w-7 text-primary" />
+          </div>
+          Contatos
+        </h1>
+        <p className="section-description">
+          Gerencie toda sua base de contatos WhatsApp
         </p>
       </div>
 
-      <Card>
+      <Card className="premium-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
@@ -46,44 +51,63 @@ export default function Contatos() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Input
-            placeholder="Buscar por número, nome ou CPF..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="relative">
+            <Search className="absolute left-4 top-4 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por número, nome ou CPF..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-12 h-12 text-base"
+            />
+          </div>
         </CardContent>
       </Card>
 
       {isLoading && (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+            <p className="text-sm text-muted-foreground">Carregando contatos...</p>
+          </div>
         </div>
       )}
 
       {!isLoading && contacts && contacts.length === 0 && (
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">
-              {search
-                ? "Nenhum contato encontrado com esse critério de busca."
-                : "Nenhum contato cadastrado ainda. Os contatos são criados automaticamente ao receber mensagens."}
-            </p>
+        <Card className="premium-card">
+          <CardContent className="pt-16 pb-16 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-4 bg-muted/50 rounded-2xl">
+                <Users className="h-16 w-16 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-1">
+                  {search ? "Nenhum contato encontrado" : "Nenhum contato cadastrado"}
+                </h3>
+                <p className="text-muted-foreground">
+                  {search ? "Tente outro termo de busca" : "Os contatos são criados automaticamente ao receber mensagens"}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {contacts?.map((contact) => (
-          <Card key={contact.id}>
+          <Card key={contact.id} className="premium-card hover:shadow-lg transition-all">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-base">
-                    {contact.name || "Sem nome"}
-                  </CardTitle>
-                  <div className="font-mono text-sm text-muted-foreground mt-1">
-                    {contact.msisdn}
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <UserCircle className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-base">
+                      {contact.name || "Sem nome"}
+                    </CardTitle>
+                    <div className="font-mono text-sm text-muted-foreground mt-1">
+                      {contact.msisdn}
+                    </div>
                   </div>
                 </div>
                 {contact.opt_out && (
@@ -93,9 +117,9 @@ export default function Contatos() {
             </CardHeader>
             <CardContent className="space-y-2">
               {contact.cpf && (
-                <div className="text-sm">
+                <div className="text-sm p-2 bg-muted/30 rounded">
                   <span className="text-muted-foreground">CPF:</span>{" "}
-                  {contact.cpf}
+                  <span className="font-mono">{contact.cpf}</span>
                 </div>
               )}
               <div className="text-xs text-muted-foreground">
