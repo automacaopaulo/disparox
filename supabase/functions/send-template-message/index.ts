@@ -241,20 +241,16 @@ function buildParameter(type: string, value: any): any {
 function sanitizeTextParam(value: any): string {
   let s = (value ?? 'N/A').toString();
 
-  // Normalizar quebras de linha: \r\n, \r, \u000b (CHAR(11) do Excel) -> \n
-  s = s.replace(/\r\n/g, '\n');
-  s = s.replace(/\r/g, '\n');
-  s = s.replace(/\u000b/g, '\n');
-  
-  // Tabs -> espaço simples
-  s = s.replace(/\t/g, ' ');
+  // Normalizar CRLF/CR -> \n
+  s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-  // Limpar espaços excessivos (máximo 4 espaços consecutivos, API permite até 4)
-  s = s.replace(/ {5,}/g, '    ');
-  
-  // Trim cada linha individualmente, mas mantém as quebras
-  s = s.split('\n')
-    .map((line: string) => line.trim())
+  // Remover caracteres de controle proibidos (tudo < 0x20, exceto \n)
+  s = s.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F]/g, ' ');
+
+  // Limpar espaços extras em cada linha
+  s = s
+    .split('\n')
+    .map((line: string) => line.replace(/ {2,}/g, ' ').trimEnd())
     .join('\n')
     .trim();
 
