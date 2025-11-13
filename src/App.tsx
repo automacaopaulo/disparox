@@ -4,8 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { DialogProvider } from "./contexts/DialogContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { SimpleLayout } from "@/components/SimpleLayout";
+import { GlobalDialogs } from "@/components/GlobalDialogs";
 import Index from "./pages/Index";
 import WhatsAppNumbers from "./pages/WhatsAppNumbers";
 import Templates from "./pages/Templates";
@@ -29,7 +31,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
+          <DialogProvider>
+            <GlobalDialogs />
+            <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route
               path="*"
@@ -55,6 +59,7 @@ const App = () => (
               }
             />
           </Routes>
+          </DialogProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

@@ -114,6 +114,7 @@ export function WhatsAppNumberDialog({
         title: editingNumber ? "Número atualizado!" : "Número adicionado!",
         description: "As configurações foram salvas com sucesso.",
       });
+      localStorage.removeItem("whatsapp-number-form-draft");
       onOpenChange(false);
       reset();
     },
@@ -127,8 +128,6 @@ export function WhatsAppNumberDialog({
   });
 
   const onSubmit = (data: FormData) => {
-    // Limpar dados salvos ao submeter com sucesso
-    localStorage.removeItem("whatsapp-number-form-draft");
     saveMutation.mutate(data);
   };
 
@@ -148,9 +147,9 @@ export function WhatsAppNumberDialog({
 
   return (
     <Dialog open={open} onOpenChange={(newOpen) => {
-      // Só fecha se clicar no botão Cancelar ou Salvar com sucesso
+      // Só permite fechar se não estiver salvando
       if (!newOpen && !saveMutation.isPending) {
-        onOpenChange(newOpen);
+        onOpenChange(false);
       }
     }}>
       <DialogContent 

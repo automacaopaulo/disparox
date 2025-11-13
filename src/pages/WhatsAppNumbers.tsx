@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plus, Pencil, Trash2, Power, PowerOff, Phone, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { WhatsAppNumberDialog } from "@/components/WhatsAppNumberDialog";
+import { useDialog } from "@/contexts/DialogContext";
 import { QualityRatingBadge } from "@/components/QualityRatingBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { CardSkeleton } from "@/components/SkeletonLoader";
@@ -27,9 +26,8 @@ interface WhatsAppNumber {
 }
 
 export default function WhatsAppNumbers() {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingNumber, setEditingNumber] = useState<WhatsAppNumber | null>(null);
   const queryClient = useQueryClient();
+  const { openWhatsAppNumberDialog } = useDialog();
 
   const { data: numbers, isLoading } = useQuery({
     queryKey: ["whatsapp-numbers"],
@@ -110,10 +108,7 @@ export default function WhatsAppNumbers() {
             Gerencie suas contas WhatsApp Business API
           </p>
         </div>
-        <Button size="lg" onClick={() => {
-          setEditingNumber(null);
-          setDialogOpen(true);
-        }}>
+        <Button size="lg" onClick={() => openWhatsAppNumberDialog()}>
           <Plus className="h-5 w-5 mr-2" />
           Adicionar Número
         </Button>
@@ -125,7 +120,7 @@ export default function WhatsAppNumbers() {
           title="Nenhum número WhatsApp cadastrado"
           description="Adicione seu primeiro número WhatsApp Business para começar a enviar mensagens"
           actionLabel="Adicionar Primeiro Número"
-          onAction={() => setDialogOpen(true)}
+          onAction={() => openWhatsAppNumberDialog()}
         />
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -173,10 +168,7 @@ export default function WhatsAppNumbers() {
                     variant="outline"
                     size="sm"
                     className="flex-1"
-                    onClick={() => {
-                      setEditingNumber(number);
-                      setDialogOpen(true);
-                    }}
+                    onClick={() => openWhatsAppNumberDialog(number)}
                   >
                     <Pencil className="h-3 w-3 mr-1" />
                     Editar
@@ -214,12 +206,6 @@ export default function WhatsAppNumbers() {
           ))}
         </div>
       )}
-
-      <WhatsAppNumberDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        editingNumber={editingNumber}
-      />
     </div>
   );
 }
