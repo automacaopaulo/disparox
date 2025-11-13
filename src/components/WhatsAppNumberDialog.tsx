@@ -52,6 +52,8 @@ export function WhatsAppNumberDialog({
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>();
 
   useEffect(() => {
+    const savedData = localStorage.getItem("whatsapp-number-form-draft");
+    
     if (editingNumber) {
       reset({
         name: editingNumber.name,
@@ -62,6 +64,10 @@ export function WhatsAppNumberDialog({
         phone_number: editingNumber.phone_number || "",
         display_name: editingNumber.display_name || "",
       });
+    } else if (savedData && open) {
+      // Restaurar dados salvos se houver
+      const parsed = JSON.parse(savedData);
+      reset(parsed);
     } else {
       reset({
         name: "",
@@ -73,7 +79,7 @@ export function WhatsAppNumberDialog({
         display_name: "",
       });
     }
-  }, [editingNumber, reset]);
+  }, [editingNumber, reset, open]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -121,7 +127,23 @@ export function WhatsAppNumberDialog({
   });
 
   const onSubmit = (data: FormData) => {
+    // Limpar dados salvos ao submeter com sucesso
+    localStorage.removeItem("whatsapp-number-form-draft");
     saveMutation.mutate(data);
+  };
+
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    // Salvar no localStorage a cada mudança
+    const currentValues = {
+      name: document.querySelector<HTMLInputElement>('[name="name"]')?.value || "",
+      phone_number_id: document.querySelector<HTMLInputElement>('[name="phone_number_id"]')?.value || "",
+      waba_id: document.querySelector<HTMLInputElement>('[name="waba_id"]')?.value || "",
+      access_token: document.querySelector<HTMLTextAreaElement>('[name="access_token"]')?.value || "",
+      business_account_id: document.querySelector<HTMLInputElement>('[name="business_account_id"]')?.value || "",
+      phone_number: document.querySelector<HTMLInputElement>('[name="phone_number"]')?.value || "",
+      display_name: document.querySelector<HTMLInputElement>('[name="display_name"]')?.value || "",
+    };
+    localStorage.setItem("whatsapp-number-form-draft", JSON.stringify(currentValues));
   };
 
   return (
@@ -161,6 +183,7 @@ export function WhatsAppNumberDialog({
               id="name"
               placeholder="Ex: Atendimento Principal, Vendas, Suporte..."
               {...register("name", { required: "Nome é obrigatório" })}
+              onChange={(e) => handleInputChange("name", e.target.value)}
               className="h-12 text-base"
             />
             {errors.name && (
@@ -183,6 +206,7 @@ export function WhatsAppNumberDialog({
               {...register("phone_number_id", { 
                 required: "Phone Number ID é obrigatório" 
               })}
+              onChange={(e) => handleInputChange("phone_number_id", e.target.value)}
               className="h-12 text-base font-mono"
             />
             {errors.phone_number_id && (
@@ -209,6 +233,7 @@ export function WhatsAppNumberDialog({
               id="waba_id"
               placeholder="123456789012345"
               {...register("waba_id", { required: "WABA ID é obrigatório" })}
+              onChange={(e) => handleInputChange("waba_id", e.target.value)}
               className="h-12 text-base font-mono"
             />
             {errors.waba_id && (
@@ -236,6 +261,7 @@ export function WhatsAppNumberDialog({
               {...register("access_token", { 
                 required: "Access Token é obrigatório" 
               })}
+              onChange={(e) => handleInputChange("access_token", e.target.value)}
             />
             {errors.access_token && (
               <p className="text-sm text-destructive flex items-center gap-1">
@@ -265,6 +291,7 @@ export function WhatsAppNumberDialog({
                   id="business_account_id"
                   placeholder="123456789012345"
                   {...register("business_account_id")}
+                  onChange={(e) => handleInputChange("business_account_id", e.target.value)}
                   className="h-11 font-mono text-sm"
                 />
                 <p className="text-xs text-muted-foreground">ID da conta comercial (opcional)</p>
@@ -278,6 +305,7 @@ export function WhatsAppNumberDialog({
                   id="phone_number"
                   placeholder="+55 11 98765-4321"
                   {...register("phone_number")}
+                  onChange={(e) => handleInputChange("phone_number", e.target.value)}
                   className="h-11 font-mono text-sm"
                 />
                 <p className="text-xs text-muted-foreground">Número completo com DDI</p>
@@ -292,6 +320,7 @@ export function WhatsAppNumberDialog({
                 id="display_name"
                 placeholder="Nome que aparece no WhatsApp"
                 {...register("display_name")}
+                onChange={(e) => handleInputChange("display_name", e.target.value)}
                 className="h-11 text-sm"
               />
               <p className="text-xs text-muted-foreground">Nome visível para seus clientes no WhatsApp</p>
@@ -304,6 +333,7 @@ export function WhatsAppNumberDialog({
               variant="outline"
               onClick={() => {
                 if (confirm("Deseja realmente cancelar? Os dados não salvos serão perdidos.")) {
+                  localStorage.removeItem("whatsapp-number-form-draft");
                   onOpenChange(false);
                 }
               }}

@@ -114,7 +114,11 @@ export function ReprocessFailuresDialog({ campaign, open, onOpenChange }: Reproc
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent 
+        className="max-w-2xl max-h-[80vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Reprocessar Falhas</DialogTitle>
           <DialogDescription>
