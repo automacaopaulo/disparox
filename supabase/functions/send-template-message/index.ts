@@ -216,7 +216,7 @@ function buildParameter(type: string, value: any): any {
       return {
         type: 'currency',
         currency: {
-          fallback_value: sanitizeParam(value),
+          fallback_value: sanitizeTextParam(value),
           code: 'BRL',
           amount_1000: Math.round(amount * 1000),
         },
@@ -227,33 +227,42 @@ function buildParameter(type: string, value: any): any {
       return {
         type: 'date_time',
         date_time: {
-          fallback_value: sanitizeParam(value),
+          fallback_value: sanitizeTextParam(value),
         },
       };
     
     case 'text':
     default:
-      return { type: 'text', text: sanitizeParam(value) };
+      return { type: 'text', text: sanitizeTextParam(value) };
   }
 }
 
-function sanitizeParam(value: any, preserveChar11 = false): string {
+// 📝 Sanitizar parâmetros de TEXTO (body/header) - PRESERVA quebras de linha
+function sanitizeTextParam(value: any): string {
   let s = (value ?? 'N/A').toString();
-  
-  // Preservar CHAR(11) se solicitado (quebras do Excel Alt+Enter)
-  if (preserveChar11) {
-    s = s.replace(/[\r\n\t]/g, (match: string) => match === '\x0B' ? '\x0B' : ' ');
-  } else {
-    s = s.replace(/[\r\n\t]/g, ' ');
-  }
-  
-  s = s.replace(/ {2,}/g, ' ');
-  s = s.trim();
-  if (s.length > LIMITS.bodyParam) s = s.slice(0, LIMITS.bodyParam - 1) + '…';
+
+  // Normalizar quebras de linha
+  s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // Excel CHAR(11) / vertical tab -> também vira quebra de linha
+  s = s.replace(/\u000b/g, '\n');
+
+  // Tabs em espaço
+  s = s.replace(/\t/g, ' ');
+
+  // Limpar espaços excessivos em cada linha, mantendo as linhas
+  s = s
+    .split('\n')
+    .map((line: string) => line.replace(/ {2,}/g, ' ').trimEnd())
+    .join('\n')
+    .trim();
+
+  if (s.length > LIMITS.bodyParam) s = s.slice(0, LIMITS.bodyParam);
   if (!s) s = 'N/A';
   return s;
 }
 
+// 🔗 Sanitizar parâmetros de URL (botões) - REMOVE quebras de linha
 function sanitizeUrlVar(value: any): string {
   let s = (value ?? '').toString();
   s = s.replace(/[\r\n\t]/g, '');

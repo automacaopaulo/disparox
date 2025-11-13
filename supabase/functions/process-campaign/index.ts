@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
             if (structure.body?.vars?.length > 0) {
               const bodyParams = structure.body.vars.map((n: number) => ({
                 type: 'text',
-                text: sanitizeParam(params[`body_${n}`] || 'N/A'),
+                text: sanitizeTextParam(params[`body_${n}`] || 'N/A'),
               }));
               components.push({ type: 'body', parameters: bodyParams });
             }
@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
             if (structure.header?.format === 'TEXT' && structure.header.vars?.length > 0) {
               const headerParams = structure.header.vars.map((n: number) => ({
                 type: 'text',
-                text: sanitizeParam(params[`header_${n}`] || 'N/A'),
+                text: sanitizeTextParam(params[`header_${n}`] || 'N/A'),
               }));
               components.push({ type: 'header', parameters: headerParams });
             }
@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
                 if (btn.type === 'URL' && btn.hasVars && btn.vars?.length > 0) {
                   const buttonParams = btn.vars.map((v: any) => ({
                     type: 'text',
-                    text: sanitizeUrlParam(params[`button_${idx}_${v.index}`]),
+                    text: sanitizeUrlVar(params[`button_${idx}_${v.index}`]),
                   }));
 
                   components.push({
@@ -384,14 +384,27 @@ Deno.serve(async (req) => {
   }
 });
 
-function sanitizeParam(value: any): string {
+// 📝 Sanitizar parâmetros de TEXTO (body/header) - PRESERVA quebras de linha
+function sanitizeTextParam(value: any): string {
   let s = (value ?? 'N/A').toString();
-  // Remover caracteres não-ASCII para evitar erro 132018
-  s = s.replace(/[^\x00-\x7F]/g, '');
-  s = s.replace(/[\r\n\t]/g, ' ');
-  s = s.replace(/ {2,}/g, ' ');
-  s = s.trim();
-  if (s.length > 1024) s = s.slice(0, 1023) + '…';
+
+  // Normalizar quebras de linha
+  s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // Excel CHAR(11) / vertical tab -> também vira quebra de linha
+  s = s.replace(/\u000b/g, '\n');
+
+  // Tabs em espaço
+  s = s.replace(/\t/g, ' ');
+
+  // Limpar espaços excessivos em cada linha, mantendo as linhas
+  s = s
+    .split('\n')
+    .map((line: string) => line.replace(/ {2,}/g, ' ').trimEnd())
+    .join('\n')
+    .trim();
+
+  if (s.length > 1024) s = s.slice(0, 1024);
   if (!s) s = 'N/A';
   return s;
 }
@@ -404,7 +417,8 @@ function normalizeMsisdn(raw: string): string {
   return digits;
 }
 
-function sanitizeUrlParam(value: any): string {
+// 🔗 Sanitizar parâmetros de URL (botões) - REMOVE quebras de linha
+function sanitizeUrlVar(value: any): string {
   let s = (value ?? '').toString();
   // Remover espaços e quebras de linha
   s = s.replace(/[\r\n\t\s]/g, '');
