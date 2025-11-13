@@ -102,22 +102,17 @@ export default function DisparoSingle() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="section-header">
-        <h1 className="section-title flex items-center gap-3">
-          <div className="p-2 bg-success/10 rounded-xl">
-            <Zap className="h-7 w-7 text-success" />
+      <Card className="border-2 shadow-md">
+        <CardHeader className="bg-muted/30 border-b">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Send className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-xl">Configuração do Envio</CardTitle>
+              <CardDescription className="mt-1">Preencha os dados para enviar a mensagem via template</CardDescription>
+            </div>
           </div>
-          Disparo 1:1
-        </h1>
-        <p className="section-description">
-          Envie mensagens individuais usando templates aprovados
-        </p>
-      </div>
-
-      <Card className="premium-card">
-        <CardHeader>
-          <CardTitle>Configuração do Envio</CardTitle>
-          <CardDescription>Preencha os dados para enviar a mensagem</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
@@ -189,10 +184,14 @@ export default function DisparoSingle() {
           )}
 
           {selectedTemplateData && (
-            <div className="bg-muted/50 p-4 rounded-xl border">
-              <h4 className="font-medium mb-2">📱 Preview</h4>
-              <div className="bg-background p-4 rounded-lg">
-                {structure?.body?.text || "Template sem corpo"}
+            <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-5 rounded-xl border-2 border-primary/20">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                📱 <span>Preview da Mensagem</span>
+              </h4>
+              <div className="bg-background p-4 rounded-lg shadow-sm">
+                <p className="text-sm whitespace-pre-wrap">
+                  {structure?.body?.text || "Template sem corpo"}
+                </p>
               </div>
             </div>
           )}
@@ -200,7 +199,7 @@ export default function DisparoSingle() {
           <Button
             onClick={() => sendMutation.mutate()}
             disabled={!selectedNumber || !selectedTemplate || !phoneNumber || sendMutation.isPending}
-            className="w-full bg-success hover:bg-success/90"
+            className="w-full h-12 text-base font-semibold"
             size="lg"
           >
             {sendMutation.isPending ? (
