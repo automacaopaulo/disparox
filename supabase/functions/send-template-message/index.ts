@@ -75,13 +75,7 @@ Deno.serve(async (req) => {
           const varIndex = typeof v === 'number' ? v : v.index;
           const varType = typeof v === 'object' ? v.type : 'text';
           const value = parameters[`header_${varIndex}`] || 'N/A';
-          const param = buildParameter(varType, value);
-          
-          // 🐛 DEBUG: Log temporário para verificar quebras de linha
-          console.log(`DEBUG header_${varIndex} RAW:`, value);
-          console.log(`DEBUG header_${varIndex} FINAL:`, JSON.stringify(param));
-          
-          return param;
+          return buildParameter(varType, value);
         });
         components.push({ type: 'header', parameters: params });
       } else if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(structure.header.format)) {
@@ -99,13 +93,7 @@ Deno.serve(async (req) => {
         const varIndex = typeof v === 'number' ? v : v.index;
         const varType = typeof v === 'object' ? v.type : 'text';
         const value = parameters[`body_${varIndex}`] || 'N/A';
-        const param = buildParameter(varType, value);
-        
-        // 🐛 DEBUG: Log temporário para verificar quebras de linha
-        console.log(`DEBUG body_${varIndex} RAW:`, value);
-        console.log(`DEBUG body_${varIndex} FINAL:`, JSON.stringify(param));
-        
-        return param;
+        return buildParameter(varType, value);
       });
       components.push({ type: 'body', parameters: params });
     }
@@ -249,27 +237,23 @@ function buildParameter(type: string, value: any): any {
   }
 }
 
-// 📝 Sanitizar parâmetros de TEXTO (body/header) - Preserva quebras de linha
+// 📝 Sanitizar parâmetros de TEXTO (body/header) - Remove quebras de linha (API não aceita)
 function sanitizeTextParam(value: any): string {
   let s = (value ?? 'N/A').toString();
 
-  // Normalizar CRLF/CR -> \n
-  s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // Remove TODAS quebras de linha e tabs (API WhatsApp não aceita)
+  s = s.replace(/[\r\n\t]/g, ' ');
 
-  // Remover caracteres de controle proibidos (tudo < 0x20, exceto \n)
-  s = s.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F]/g, ' ');
-
-  // Limpar espaços extras em cada linha
-  s = s
-    .split('\n')
-    .map((line: string) => line.replace(/ {2,}/g, ' ').trimEnd())
-    .join('\n')
-    .trim();
+  // Limpar espaços duplicados
+  s = s.replace(/ {2,}/g, ' ');
+  
+  s = s.trim();
 
   if (s.length > LIMITS.bodyParam) s = s.slice(0, LIMITS.bodyParam);
   if (!s) s = 'N/A';
   return s;
 }
+
 
 // 🔗 Sanitizar parâmetros de URL (botões) - REMOVE quebras de linha
 function sanitizeUrlVar(value: any): string {

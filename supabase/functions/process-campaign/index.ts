@@ -168,10 +168,6 @@ Deno.serve(async (req) => {
                 const paramValue = params[`body_${varIndex}`];
                 const sanitizedValue = sanitizeTextParam(paramValue || 'N/A');
                 
-                // 🐛 DEBUG: Log temporário para verificar quebras de linha
-                console.log(`  body_${varIndex} RAW:`, paramValue);
-                console.log(`  body_${varIndex} SANITIZADO:`, JSON.stringify(sanitizedValue));
-                
                 return {
                   type: 'text',
                   text: sanitizedValue,
@@ -186,10 +182,6 @@ Deno.serve(async (req) => {
                 const varIndex = typeof v === 'number' ? v : (v.index || v);
                 const paramValue = params[`header_${varIndex}`];
                 const sanitizedValue = sanitizeTextParam(paramValue || 'N/A');
-                
-                // 🐛 DEBUG: Log temporário para verificar quebras de linha
-                console.log(`  header_${varIndex} RAW:`, paramValue);
-                console.log(`  header_${varIndex} SANITIZADO:`, JSON.stringify(sanitizedValue));
                 
                 return {
                   type: 'text',
@@ -411,27 +403,23 @@ Deno.serve(async (req) => {
   }
 });
 
-// 📝 Sanitizar parâmetros de TEXTO (body/header) - Preserva quebras de linha
+// 📝 Sanitizar parâmetros de TEXTO (body/header) - Remove quebras de linha (API não aceita)
 function sanitizeTextParam(value: any): string {
   let s = (value ?? 'N/A').toString();
 
-  // Normalizar CRLF/CR -> \n
-  s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // Remove TODAS quebras de linha e tabs (API WhatsApp não aceita)
+  s = s.replace(/[\r\n\t]/g, ' ');
 
-  // Remover caracteres de controle proibidos (tudo < 0x20, exceto \n)
-  s = s.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F]/g, ' ');
-
-  // Limpar espaços extras em cada linha
-  s = s
-    .split('\n')
-    .map((line: string) => line.replace(/ {2,}/g, ' ').trimEnd())
-    .join('\n')
-    .trim();
+  // Limpar espaços duplicados
+  s = s.replace(/ {2,}/g, ' ');
+  
+  s = s.trim();
 
   if (s.length > 1024) s = s.slice(0, 1024);
   if (!s) s = 'N/A';
   return s;
 }
+
 
 function normalizeMsisdn(raw: string): string {
   const digits = raw.replace(/\D/g, '');
