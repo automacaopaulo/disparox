@@ -74,7 +74,7 @@ export function AppSidebar() {
         {/* Menu Groups */}
         {menuGroups.map((group, groupIndex) => (
           <SidebarGroup key={group.label} className="px-3 py-4">
-            <SidebarGroupLabel className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-white">
+            <SidebarGroupLabel className="mb-3 px-2 text-xs font-bold uppercase tracking-wider text-foreground/70">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -84,12 +84,12 @@ export function AppSidebar() {
                     <NavLink 
                       to={item.url} 
                       end
-                      className="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white transition-all hover:bg-accent/50 hover:text-white [&>svg]:text-white"
-                      activeClassName="bg-primary/10 text-primary shadow-sm [&>span:first-child]:opacity-100 [&>svg]:text-primary"
+                      className="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-all hover:bg-accent hover:text-foreground"
+                      activeClassName="bg-primary text-primary-foreground shadow-sm [&>span:first-child]:opacity-100"
                     >
-                      <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary opacity-0 transition-opacity" />
+                      <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary-foreground opacity-0 transition-opacity" />
                       <item.icon className="h-[18px] w-[18px] shrink-0" />
-                      <span className="truncate">{item.title}</span>
+                      <span className="truncate font-medium">{item.title}</span>
                     </NavLink>
                   </SidebarMenuItem>
                 ))}
