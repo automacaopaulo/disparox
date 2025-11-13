@@ -1,4 +1,8 @@
-import { Home, Phone, Send, List, MessageSquare, Users, FileText, Layers, Settings, BarChart3, Calculator, Globe, UserX, Workflow, Tag, Target, Bot } from "lucide-react";
+import { 
+  Home, Phone, Send, List, MessageSquare, Users, FileText, Layers, 
+  Settings, BarChart3, Calculator, Globe, UserX, Workflow, Tag, Target, Bot 
+} from "lucide-react";
+
 import { NavLink } from "@/components/NavLink";
 import { Logo } from "@/components/Logo";
 
@@ -64,41 +68,57 @@ const menuGroups = [
 
 export function AppSidebar() {
   return (
-    <Sidebar collapsible="none" className="border-r border-border/40 bg-sidebar-background backdrop-blur-xl">
+    <Sidebar 
+      collapsible="none"
+      className="border-r border-border/40 bg-background text-foreground"
+    >
       <SidebarContent className="gap-0">
-        {/* Logo Section */}
-        <div className="flex h-16 items-center px-6 border-b border-border/40 bg-gradient-to-r from-sidebar-background to-sidebar-background/80">
+
+        {/* LOGO */}
+        <div className="flex h-16 items-center px-6 border-b border-border/40 bg-background/60 backdrop-blur">
           <Logo showText={true} />
         </div>
 
-        {/* Menu Groups */}
-        {menuGroups.map((group, groupIndex) => (
+        {/* GRUPOS DO MENU */}
+        {menuGroups.map((group, index) => (
           <SidebarGroup key={group.label} className="px-3 py-4">
+
             <SidebarGroupLabel className="px-3 text-[11px] font-semibold tracking-[0.16em] text-muted-foreground/70 uppercase mb-2">
               {group.label}
             </SidebarGroupLabel>
+
             <SidebarGroupContent>
               <SidebarMenu className="gap-1">
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
+
                     <NavLink
                       to={item.url}
                       end
-                      className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                      activeClassName="bg-primary text-primary-foreground font-semibold shadow-sm"
+                      className="group flex items-center gap-2 rounded-md px-3 py-2
+                                text-sm font-medium text-muted-foreground
+                                transition-all hover:bg-accent hover:text-foreground"
+                      activeClassName="bg-primary text-primary-foreground shadow-sm
+                                       [&>svg]:text-primary-foreground
+                                       [&>span]:text-primary-foreground"
                     >
-                      <item.icon className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" />
-                      <span className="truncate text-inherit">{item.title}</span>
+                      <item.icon className="h-4 w-4 shrink-0 transition-transform group-hover:scale-105" />
+                      <span className="truncate">{item.title}</span>
                     </NavLink>
+
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
-            {groupIndex < menuGroups.length - 1 && (
+
+            {/* divisor */}
+            {index < menuGroups.length - 1 && (
               <div className="mt-4 h-px bg-border/40" />
             )}
+
           </SidebarGroup>
         ))}
+
       </SidebarContent>
     </Sidebar>
   );
