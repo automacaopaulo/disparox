@@ -291,59 +291,58 @@ export default function DisparoCSV() {
   );
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Header Premium */}
-      <div className="section-header">
-        <h1 className="section-title flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-xl">
-            <Upload className="h-7 w-7 text-primary" />
-          </div>
-          Disparo em Massa (CSV)
-        </h1>
-        <p className="section-description">
-          Envie mensagens personalizadas em lote para milhares de contatos
-        </p>
-      </div>
-
+    <div className="space-y-8 max-w-6xl mx-auto">
       {/* Stepper Premium */}
-      <div className="flex items-center justify-center gap-3 p-6 premium-card mb-8">
-        {[
-          { num: 1, label: "Upload CSV", icon: Upload },
-          { num: 2, label: "Configuração", icon: Zap },
-          { num: 3, label: "Executar", icon: Send },
-        ].map(({ num, label, icon: Icon }, idx) => (
-          <div key={num} className="flex items-center gap-3">
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-semibold transition-all ${
-                  step >= num
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {step > num ? <CheckCircle2 className="h-5 w-5" /> : num}
+      <Card className="border-2 shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between gap-4">
+            {[
+              { num: 1, label: "Upload CSV", icon: Upload },
+              { num: 2, label: "Configuração", icon: Settings },
+              { num: 3, label: "Executar", icon: Send },
+            ].map(({ num, label, icon: Icon }, idx) => (
+              <div key={num} className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                      step >= num
+                        ? "bg-primary text-primary-foreground shadow-lg scale-110"
+                        : "bg-muted/50 text-muted-foreground"
+                    }`}
+                  >
+                    {step > num ? <CheckCircle2 className="h-5 w-5" /> : num}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`text-sm font-semibold ${step >= num ? "text-foreground" : "text-muted-foreground"}`}>
+                      {label}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Icon className={`h-4 w-4 ${step >= num ? "text-primary" : "text-muted-foreground"}`} />
+                    </div>
+                  </div>
+                </div>
+                {idx < 2 && (
+                  <ChevronRight className={`h-5 w-5 mx-2 ${step > num ? "text-primary" : "text-muted-foreground"}`} />
+                )}
               </div>
-              <div className="flex flex-col">
-                <span className={`text-sm font-medium ${step >= num ? "text-foreground" : "text-muted-foreground"}`}>
-                  {label}
-                </span>
-                <Icon className={`h-3 w-3 ${step >= num ? "text-primary" : "text-muted-foreground"}`} />
-              </div>
-            </div>
-            {idx < 2 && <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+            ))}
           </div>
-        ))}
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Step 1: Upload CSV */}
       {step === 1 && (
-        <Card className="premium-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              Passo 1: Upload do Arquivo CSV
-            </CardTitle>
-            <CardDescription>Faça upload do arquivo com os contatos para disparo</CardDescription>
+        <Card className="border-2 shadow-md">
+          <CardHeader className="bg-muted/30 border-b">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <FileText className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Upload do Arquivo CSV</CardTitle>
+                <CardDescription className="mt-1">Faça upload do arquivo com os contatos para disparo</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-3">
@@ -455,13 +454,17 @@ export default function DisparoCSV() {
 
       {/* Step 2: Configuração */}
       {step === 2 && (
-        <Card className="premium-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-warning" />
-              Passo 2: Configuração da Campanha
-            </CardTitle>
-            <CardDescription>Defina os parâmetros de envio</CardDescription>
+        <Card className="border-2 shadow-md">
+          <CardHeader className="bg-muted/30 border-b">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Settings className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Configuração da Campanha</CardTitle>
+                <CardDescription className="mt-1">Defina os parâmetros de envio</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -607,13 +610,17 @@ export default function DisparoCSV() {
 
       {/* Step 3: Executar */}
       {step === 3 && (
-        <Card className="premium-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5 text-success" />
-              Passo 3: Revisão Final
-            </CardTitle>
-            <CardDescription>Confirme os dados antes de iniciar</CardDescription>
+        <Card className="border-2 shadow-md">
+          <CardHeader className="bg-muted/30 border-b">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-success/10 rounded-lg">
+                <Send className="h-6 w-6 text-success" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Revisão Final</CardTitle>
+                <CardDescription className="mt-1">Confirme os dados antes de iniciar o envio</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="bg-muted/50 p-6 rounded-xl space-y-4 border-2">
