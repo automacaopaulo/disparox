@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Plus, Trash2, Filter, Target, Tag } from "lucide-react";
+import { Users, Plus, Trash2, Filter, Target, Tag, Sparkles } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { StatsSkeleton } from "@/components/SkeletonLoader";
 
 export default function Segmentacao() {
   const { toast } = useToast();
@@ -74,7 +76,7 @@ export default function Segmentacao() {
           name: newAudienceName,
           description: newAudienceDescription,
           filters,
-          contact_count: 0, // TODO: calcular dinamicamente
+          contact_count: 0,
         });
       if (error) throw error;
     },
@@ -86,14 +88,7 @@ export default function Segmentacao() {
       setIsDialogOpen(false);
       toast({
         title: "✅ Público criado",
-        description: "Novo público salvo com sucesso!",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "❌ Erro ao criar público",
-        description: "Tente novamente",
-        variant: "destructive",
+        description: "Novo público salvo!",
       });
     },
   });
@@ -108,59 +103,67 @@ export default function Segmentacao() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["audiences"] });
-      toast({
-        title: "✅ Público deletado",
-      });
+      toast({ title: "✅ Público deletado" });
     },
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold flex items-center gap-2">
-            <Target className="h-8 w-8" />
+        <div className="section-header">
+          <h1 className="section-title flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Target className="h-7 w-7 text-primary" />
+            </div>
             Segmentação
-          </h2>
-          <p className="text-muted-foreground mt-1">
+          </h1>
+          <p className="section-description">
             Crie públicos personalizados para campanhas direcionadas
           </p>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button size="lg">
+              <Plus className="h-5 w-5 mr-2" />
               Novo Público
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>Criar Público Segmentado</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Criar Público Segmentado
+              </DialogTitle>
+              <DialogDescription>
+                Defina critérios para agrupar seus contatos
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label>Nome do Público</Label>
+                <Label className="text-base">Nome do Público</Label>
                 <Input
                   placeholder="Ex: Clientes VIP, Leads Quentes..."
                   value={newAudienceName}
                   onChange={(e) => setNewAudienceName(e.target.value)}
+                  className="h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Descrição</Label>
+                <Label className="text-base">Descrição</Label>
                 <Textarea
                   placeholder="Descreva este público..."
                   value={newAudienceDescription}
                   onChange={(e) => setNewAudienceDescription(e.target.value)}
+                  rows={3}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Tipo de Filtro</Label>
+                <Label className="text-base">Tipo de Filtro</Label>
                 <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -173,13 +176,13 @@ export default function Segmentacao() {
 
               {filterType === "tags" && (
                 <div className="space-y-2">
-                  <Label>Selecionar Tags</Label>
-                  <div className="flex flex-wrap gap-2">
+                  <Label className="text-base">Selecionar Tags</Label>
+                  <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-xl border">
                     {tags?.map((tag) => (
                       <Badge
                         key={tag.id}
                         style={{ backgroundColor: selectedTags.includes(tag.id) ? tag.color : '#e5e7eb' }}
-                        className="cursor-pointer"
+                        className="cursor-pointer transition-all hover:scale-110"
                         onClick={() => {
                           setSelectedTags(prev =>
                             prev.includes(tag.id)
@@ -198,8 +201,10 @@ export default function Segmentacao() {
               <Button 
                 onClick={() => createAudienceMutation.mutate()} 
                 disabled={!newAudienceName || createAudienceMutation.isPending}
+                size="lg"
                 className="w-full"
               >
+                <Plus className="mr-2 h-5 w-5" />
                 Criar Público
               </Button>
             </div>
@@ -208,81 +213,94 @@ export default function Segmentacao() {
       </div>
 
       {/* Estatísticas */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Contatos</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="premium-card hover:shadow-xl transition-all">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total de Contatos</CardTitle>
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{contactCount || 0}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="stat-value text-primary">{contactCount || 0}</div>
+            <p className="text-sm text-muted-foreground">
               Disponíveis para segmentação
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Públicos Criados</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
+        <Card className="premium-card hover:shadow-xl transition-all">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Públicos Criados</CardTitle>
+            <div className="p-2 bg-success/10 rounded-lg">
+              <Target className="h-5 w-5 text-success" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{audiences?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="stat-value text-success">{audiences?.length || 0}</div>
+            <p className="text-sm text-muted-foreground">
               Segmentações salvas
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tags Ativas</CardTitle>
-            <Tag className="h-4 w-4 text-muted-foreground" />
+        <Card className="premium-card hover:shadow-xl transition-all">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Tags Ativas</CardTitle>
+            <div className="p-2 bg-warning/10 rounded-lg">
+              <Tag className="h-5 w-5 text-warning" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{tags?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="stat-value text-warning">{tags?.length || 0}</div>
+            <p className="text-sm text-muted-foreground">
               Categorias disponíveis
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {isLoading && (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
-      )}
+      {isLoading && <StatsSkeleton />}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {audiences?.map((audience) => (
-          <Card key={audience.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    {audience.name}
-                  </CardTitle>
-                  {audience.description && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {audience.description}
-                    </p>
-                  )}
+      {!isLoading && audiences?.length === 0 ? (
+        <EmptyState
+          icon={Target}
+          title="Nenhum público criado"
+          description="Crie seu primeiro público segmentado para campanhas direcionadas"
+          actionLabel="Criar Primeiro Público"
+          onAction={() => setIsDialogOpen(true)}
+        />
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          {audiences?.map((audience) => (
+            <Card key={audience.id} className="premium-card hover:shadow-xl transition-all">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <div className="p-1.5 bg-primary/10 rounded-lg">
+                        <Target className="h-5 w-5 text-primary" />
+                      </div>
+                      {audience.name}
+                    </CardTitle>
+                    {audience.description && (
+                      <CardDescription className="mt-2">
+                        {audience.description}
+                      </CardDescription>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => deleteAudienceMutation.mutate(audience.id)}
+                    disabled={deleteAudienceMutation.isPending}
+                    className="hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteAudienceMutation.mutate(audience.id)}
-                  disabled={deleteAudienceMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">
                     <Filter className="h-3 w-3 mr-1" />
@@ -290,30 +308,20 @@ export default function Segmentacao() {
                       ? 'Por Tags' 
                       : 'Todos'}
                   </Badge>
-                  <Badge>
+                  <Badge className="bg-primary">
+                    <Users className="h-3 w-3 mr-1" />
                     ~{audience.contact_count} contatos
                   </Badge>
                 </div>
                 
-                <Button variant="outline" size="sm" className="w-full mt-4">
+                <Button variant="outline" size="sm" className="w-full">
                   Usar em Campanha
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        {!isLoading && audiences?.length === 0 && (
-          <Card className="col-span-2">
-            <CardContent className="pt-6 text-center">
-              <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">
-                Nenhum público criado ainda. Crie seu primeiro público segmentado!
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

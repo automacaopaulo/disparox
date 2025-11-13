@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Tag, Plus, Trash2, Edit } from "lucide-react";
+import { Tag, Plus, Trash2, Palette } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { CardSkeleton } from "@/components/SkeletonLoader";
 
 export default function Tags() {
   const { toast } = useToast();
@@ -50,14 +52,7 @@ export default function Tags() {
       setIsDialogOpen(false);
       toast({
         title: "✅ Tag criada",
-        description: "Nova tag adicionada com sucesso!",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "❌ Erro ao criar tag",
-        description: error.message,
-        variant: "destructive",
+        description: "Nova tag adicionada!",
       });
     },
   });
@@ -74,7 +69,6 @@ export default function Tags() {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       toast({
         title: "✅ Tag deletada",
-        description: "Tag removida com sucesso!",
       });
     },
   });
@@ -84,50 +78,79 @@ export default function Tags() {
     "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"
   ];
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold flex items-center gap-2">
-            <Tag className="h-8 w-8" />
+  if (isLoading) {
+    return (
+      <div className="space-y-6 max-w-[1400px] mx-auto">
+        <div className="section-header">
+          <h1 className="section-title flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Tag className="h-7 w-7 text-primary" />
+            </div>
             Tags
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            Organize seus contatos com tags personalizadas
+          </h1>
+        </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 max-w-[1400px] mx-auto">
+      <div className="flex items-center justify-between">
+        <div className="section-header">
+          <h1 className="section-title flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Tag className="h-7 w-7 text-primary" />
+            </div>
+            Tags
+          </h1>
+          <p className="section-description">
+            Organize e categorize seus contatos com tags personalizadas
           </p>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button size="lg">
+              <Plus className="h-5 w-5 mr-2" />
               Nova Tag
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Criar Nova Tag</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5 text-primary" />
+                Criar Nova Tag
+              </DialogTitle>
+              <DialogDescription>
+                Defina um nome e cor para sua tag
+              </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
+            <div className="space-y-6 pt-4">
               <div className="space-y-2">
-                <Label htmlFor="tagName">Nome da Tag</Label>
+                <Label htmlFor="tagName" className="text-base">Nome da Tag</Label>
                 <Input
                   id="tagName"
                   placeholder="Ex: VIP, Interessado, Cliente..."
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
+                  className="h-11"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Cor</Label>
-                <div className="flex gap-2">
+              <div className="space-y-3">
+                <Label className="text-base">Escolha uma Cor</Label>
+                <div className="grid grid-cols-8 gap-3">
                   {predefinedColors.map((color) => (
                     <button
                       key={color}
                       onClick={() => setNewTagColor(color)}
-                      className={`w-8 h-8 rounded-full border-2 ${
-                        newTagColor === color ? "border-black" : "border-gray-300"
+                      className={`w-10 h-10 rounded-xl border-2 transition-all hover:scale-110 ${
+                        newTagColor === color ? "border-foreground ring-2 ring-ring scale-110" : "border-border"
                       }`}
                       style={{ backgroundColor: color }}
                     />
@@ -138,8 +161,10 @@ export default function Tags() {
               <Button 
                 onClick={() => createTagMutation.mutate()} 
                 disabled={!newTagName || createTagMutation.isPending}
+                size="lg"
                 className="w-full"
               >
+                <Plus className="mr-2 h-5 w-5" />
                 Criar Tag
               </Button>
             </div>
@@ -147,70 +172,80 @@ export default function Tags() {
         </Dialog>
       </div>
 
-      <Card className="border-blue-200 bg-blue-50">
+      <Card className="premium-card border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
         <CardContent className="pt-6">
-          <div className="space-y-2">
-            <p className="font-semibold text-blue-900">💡 Como usar Tags:</p>
-            <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
-              <li>Crie tags para organizar seus contatos (VIP, Interessado, Cliente, etc)</li>
-              <li>Aplique tags nos contatos individualmente na página de Contatos</li>
-              <li>Use tags para criar públicos segmentados</li>
-              <li>Filtre campanhas por tags específicas</li>
-            </ul>
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Tag className="h-5 w-5 text-primary" />
+            </div>
+            <div className="space-y-3">
+              <p className="font-semibold text-lg">💡 Como usar Tags</p>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary font-bold">•</span>
+                  <span>Crie tags para organizar contatos (VIP, Cliente, Lead Quente, etc)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary font-bold">•</span>
+                  <span>Aplique tags diretamente na página de Contatos</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary font-bold">•</span>
+                  <span>Use tags para criar públicos segmentados</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary font-bold">•</span>
+                  <span>Filtre campanhas por tags específicas</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {isLoading && (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {tags?.map((tag) => (
-          <Card key={tag.id}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+      {!isLoading && tags?.length === 0 ? (
+        <EmptyState
+          icon={Tag}
+          title="Nenhuma tag criada"
+          description="Crie sua primeira tag para começar a organizar seus contatos"
+          actionLabel="Criar Primeira Tag"
+          onAction={() => setIsDialogOpen(true)}
+        />
+      ) : (
+        <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
+          {tags?.map((tag) => (
+            <Card key={tag.id} className="premium-card hover:shadow-xl hover:scale-105 transition-all">
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center text-center gap-4">
                   <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg"
                     style={{ backgroundColor: tag.color }}
                   >
-                    <Tag className="h-5 w-5 text-white" />
+                    <Tag className="h-8 w-8 text-white" />
                   </div>
-                  <div>
-                    <p className="font-semibold">{tag.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                  <div className="space-y-1">
+                    <p className="font-bold text-lg">{tag.name}</p>
+                    <p className="text-sm text-muted-foreground">
                       {tag.contact_tags?.[0]?.count || 0} contatos
                     </p>
                   </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteTagMutation.mutate(tag.id)}
+                    disabled={deleteTagMutation.isPending}
+                    className="w-full hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Deletar
+                  </Button>
                 </div>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteTagMutation.mutate(tag.id)}
-                  disabled={deleteTagMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        {!isLoading && tags?.length === 0 && (
-          <Card className="col-span-3">
-            <CardContent className="pt-6 text-center">
-              <Tag className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">
-                Nenhuma tag criada ainda. Crie sua primeira tag!
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

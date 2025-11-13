@@ -1,19 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, CheckCircle } from "lucide-react";
+import { Loader2, Send, CheckCircle, Phone, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function DisparoSingle() {
@@ -74,7 +68,7 @@ export default function DisparoSingle() {
   const sendMutation = useMutation({
     mutationFn: async () => {
       if (!selectedNumber || !selectedTemplate || !phoneNumber) {
-        throw new Error("Preencha todos os campos obrigatórios");
+        throw new Error("Preencha todos os campos");
       }
 
       const response = await supabase.functions.invoke("send-template-message", {
@@ -91,16 +85,15 @@ export default function DisparoSingle() {
     },
     onSuccess: () => {
       toast({
-        title: "Mensagem enviada!",
-        description: "A mensagem foi enviada com sucesso.",
+        title: "✅ Mensagem enviada!",
+        description: "Enviado com sucesso.",
       });
-      // Limpar formulário
       setPhoneNumber("");
       setParameters({});
     },
     onError: (error: any) => {
       toast({
-        title: "Erro ao enviar",
+        title: "❌ Erro ao enviar",
         description: error.message,
         variant: "destructive",
       });
@@ -109,23 +102,28 @@ export default function DisparoSingle() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div>
-        <h2 className="text-3xl font-bold">Disparo 1:1</h2>
-        <p className="text-muted-foreground mt-1">
+      <div className="section-header">
+        <h1 className="section-title flex items-center gap-3">
+          <div className="p-2 bg-success/10 rounded-xl">
+            <Zap className="h-7 w-7 text-success" />
+          </div>
+          Disparo 1:1
+        </h1>
+        <p className="section-description">
           Envie mensagens individuais usando templates aprovados
         </p>
       </div>
 
-      <Card>
+      <Card className="premium-card">
         <CardHeader>
           <CardTitle>Configuração do Envio</CardTitle>
+          <CardDescription>Preencha os dados para enviar a mensagem</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Número WhatsApp */}
           <div className="space-y-2">
-            <Label htmlFor="whatsapp-number">Número WhatsApp *</Label>
+            <Label htmlFor="whatsapp-number" className="text-base">Número WhatsApp *</Label>
             <Select value={selectedNumber} onValueChange={setSelectedNumber}>
-              <SelectTrigger id="whatsapp-number">
+              <SelectTrigger id="whatsapp-number" className="h-12">
                 <SelectValue placeholder="Selecione o número..." />
               </SelectTrigger>
               <SelectContent>
@@ -138,120 +136,90 @@ export default function DisparoSingle() {
             </Select>
           </div>
 
-          {/* Template */}
           <div className="space-y-2">
-            <Label htmlFor="template">Template *</Label>
+            <Label htmlFor="template" className="text-base">Template *</Label>
             <Select
               value={selectedTemplate}
               onValueChange={setSelectedTemplate}
               disabled={!selectedNumber}
             >
-              <SelectTrigger id="template">
+              <SelectTrigger id="template" className="h-12">
                 <SelectValue placeholder="Selecione o template..." />
               </SelectTrigger>
               <SelectContent>
                 {templates?.map((template) => (
                   <SelectItem key={template.id} value={template.id}>
-                    <div className="flex items-center gap-2">
-                      {template.name}
-                      <Badge variant="outline" className="ml-2">
-                        {template.language}
-                      </Badge>
-                    </div>
+                    {template.name} <Badge variant="outline" className="ml-2">{template.language}</Badge>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {selectedNumber && templates?.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Nenhum template ativo encontrado. Ative templates na página de Templates.
-              </p>
-            )}
           </div>
 
-          {/* Número de destino */}
           <div className="space-y-2">
-            <Label htmlFor="phone">Número de Destino *</Label>
+            <Label htmlFor="phone" className="text-base">Número de Destino *</Label>
             <Input
               id="phone"
               placeholder="5511999999999"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               disabled={!selectedTemplate}
+              className="h-12 font-mono"
             />
-            <p className="text-xs text-muted-foreground">
-              Formato: DDI + DDD + Número (ex: 5511999999999)
-            </p>
           </div>
 
-          {/* Variáveis do template */}
           {allVariables.length > 0 && (
             <div className="space-y-4 pt-4 border-t">
-              <div className="flex items-center gap-2">
-                <h3 className="font-medium">Variáveis do Template</h3>
-                <Badge>{allVariables.length} campos</Badge>
-              </div>
-              
+              <h3 className="font-semibold">Variáveis do Template</h3>
               {allVariables.map((variable) => (
                 <div key={variable.key} className="space-y-2">
                   <Label htmlFor={variable.key}>{variable.label}</Label>
                   <Input
                     id={variable.key}
-                    placeholder={`Digite o valor para ${variable.label}`}
+                    placeholder={`Digite o valor`}
                     value={parameters[variable.key] || ""}
                     onChange={(e) =>
                       setParameters((prev) => ({ ...prev, [variable.key]: e.target.value }))
                     }
+                    className="h-11"
                   />
                 </div>
               ))}
             </div>
           )}
 
-          {/* Preview */}
           {selectedTemplateData && (
-            <div className="bg-muted p-4 rounded-lg space-y-2">
-              <h4 className="font-medium text-sm">Preview da Mensagem</h4>
-              <div className="bg-background p-3 rounded text-sm">
-                {structure?.body?.text || "Template sem corpo definido"}
+            <div className="bg-muted/50 p-4 rounded-xl border">
+              <h4 className="font-medium mb-2">📱 Preview</h4>
+              <div className="bg-background p-4 rounded-lg">
+                {structure?.body?.text || "Template sem corpo"}
               </div>
-              {structure?.buttons?.length > 0 && (
-                <div className="text-xs text-muted-foreground">
-                  {structure.buttons.length} botão(ões) incluído(s)
-                </div>
-              )}
             </div>
           )}
 
-          {/* Botão enviar */}
           <Button
             onClick={() => sendMutation.mutate()}
-            disabled={
-              !selectedNumber ||
-              !selectedTemplate ||
-              !phoneNumber ||
-              sendMutation.isPending
-            }
-            className="w-full"
+            disabled={!selectedNumber || !selectedTemplate || !phoneNumber || sendMutation.isPending}
+            className="w-full bg-success hover:bg-success/90"
             size="lg"
           >
             {sendMutation.isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Enviando...
               </>
             ) : (
               <>
-                <Send className="mr-2 h-4 w-4" />
+                <Send className="mr-2 h-5 w-5" />
                 Enviar Mensagem
               </>
             )}
           </Button>
 
           {sendMutation.isSuccess && (
-            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-3 rounded">
-              <CheckCircle className="h-4 w-4" />
-              Mensagem enviada com sucesso!
+            <div className="flex items-center gap-2 p-4 text-success bg-success/10 rounded-xl border border-success/20">
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-medium">Mensagem enviada com sucesso!</span>
             </div>
           )}
         </CardContent>
