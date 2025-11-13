@@ -14,6 +14,10 @@ import Analytics from "./pages/Analytics";
 import CostCalculator from "./pages/CostCalculator";
 import MultiLanguage from "./pages/MultiLanguage";
 import OptOut from "./pages/OptOut";
+import FlowBuilder from "./pages/FlowBuilder";
+import Tags from "./pages/Tags";
+import Segmentacao from "./pages/Segmentacao";
+import ChatbotIA from "./pages/ChatbotIA";
 import Contatos from "./pages/Contatos";
 import Mensagens from "./pages/Mensagens";
 import Configuracoes from "./pages/Configuracoes";
@@ -39,6 +43,10 @@ const App = () => (
             <Route path="/calculadora" element={<CostCalculator />} />
             <Route path="/multi-idioma" element={<MultiLanguage />} />
             <Route path="/opt-out" element={<OptOut />} />
+            <Route path="/flows" element={<FlowBuilder />} />
+            <Route path="/tags" element={<Tags />} />
+            <Route path="/segmentacao" element={<Segmentacao />} />
+            <Route path="/chatbot" element={<ChatbotIA />} />
             <Route path="/contatos" element={<Contatos />} />
             <Route path="/mensagens" element={<Mensagens />} />
             <Route path="/configuracoes" element={<Configuracoes />} />

@@ -1,4 +1,4 @@
-import { Home, Phone, Send, List, MessageSquare, Users, FileText, Layers, Settings, BarChart3, Calculator, Globe, UserX } from "lucide-react";
+import { Home, Phone, Send, List, MessageSquare, Users, FileText, Layers, Settings, BarChart3, Calculator, Globe, UserX, Workflow, Tag, Target, Bot } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 
 import {
@@ -20,6 +20,10 @@ const items = [
   { title: "Disparo 1:1", url: "/disparo-single", icon: Send },
   { title: "Disparo CSV", url: "/disparo-csv", icon: List },
   { title: "Campanhas", url: "/campanhas", icon: MessageSquare },
+  { title: "Flow Builder", url: "/flows", icon: Workflow },
+  { title: "Tags", url: "/tags", icon: Tag },
+  { title: "Segmentação", url: "/segmentacao", icon: Target },
+  { title: "Chatbot IA", url: "/chatbot", icon: Bot },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Calculadora", url: "/calculadora", icon: Calculator },
   { title: "Multi-idioma", url: "/multi-idioma", icon: Globe },

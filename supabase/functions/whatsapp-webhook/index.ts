@@ -194,6 +194,67 @@ async function processInboundMessage(supabase: any, message: any, metadata: any)
       name: metadata.profile?.name || null,
     });
   }
+
+  // 🤖 CHATBOT COM IA: Verificar se deve responder automaticamente
+  if (!isOptOut) {
+    const { data: chatbotConfig } = await supabase
+      .from('chatbot_config')
+      .select('*')
+      .eq('whatsapp_number_id', whatsappNumber.id)
+      .eq('is_enabled', true)
+      .maybeSingle();
+
+    if (chatbotConfig) {
+      console.log('🤖 Chatbot ativo, processando resposta...');
+      
+      // Aguardar delay configurado
+      setTimeout(async () => {
+        try {
+          const { data: replyData, error: replyError } = await supabase.functions.invoke('chatbot-reply', {
+            body: {
+              messageData: message,
+              whatsappNumberId: whatsappNumber.id,
+            },
+          });
+
+          if (replyError) {
+            console.error('Erro ao gerar resposta do chatbot:', replyError);
+            return;
+          }
+
+          if (replyData?.reply) {
+            // Enviar resposta via API da Meta
+            const url = `https://graph.facebook.com/v21.0/${metadata.phone_number_id}/messages`;
+            const { data: wNumber } = await supabase
+              .from('whatsapp_numbers')
+              .select('access_token')
+              .eq('id', whatsappNumber.id)
+              .single();
+
+            if (wNumber) {
+              await fetch(url, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${wNumber.access_token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  messaging_product: 'whatsapp',
+                  to: from,
+                  type: 'text',
+                  text: { body: replyData.reply },
+                }),
+              });
+
+              console.log('✅ Chatbot respondeu com sucesso');
+            }
+          }
+        } catch (error) {
+          console.error('Erro no chatbot:', error);
+        }
+      }, (chatbotConfig.auto_reply_delay_seconds || 5) * 1000);
+    }
+  }
 }
 
 // Extrair texto da mensagem
