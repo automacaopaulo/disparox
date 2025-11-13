@@ -64,10 +64,10 @@ const menuGroups = [
 
 export function AppSidebar() {
   return (
-    <Sidebar collapsible="none" className="border-r border-border/40 bg-background text-foreground">
+    <Sidebar collapsible="none" className="border-r border-border/40 bg-sidebar-background backdrop-blur-xl">
       <SidebarContent className="gap-0">
         {/* Logo Section */}
-        <div className="flex h-16 items-center px-6 border-b border-border/40">
+        <div className="flex h-16 items-center px-6 border-b border-border/40 bg-gradient-to-r from-sidebar-background to-sidebar-background/80">
           <Logo showText={true} />
         </div>
 
@@ -84,11 +84,11 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end
-                      className="group flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground border-l-4 border-transparent"
-                      activeClassName="bg-primary text-primary-foreground border-l-primary-foreground [&>svg]:text-primary-foreground [&>span]:text-primary-foreground"
+                      className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground hover:translate-x-1 border-l-2 border-transparent"
+                      activeClassName="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border-l-primary shadow-sm [&>svg]:text-primary [&>span]:text-primary font-semibold"
                     >
-                      <item.icon className="h-4 w-4 shrink-0 transition-colors" />
-                      <span className="truncate text-foreground">{item.title}</span>
+                      <item.icon className="h-4 w-4 shrink-0 transition-all duration-200 group-hover:scale-110" />
+                      <span className="truncate">{item.title}</span>
                     </NavLink>
                   </SidebarMenuItem>
                 ))}
