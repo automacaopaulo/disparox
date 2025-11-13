@@ -192,6 +192,13 @@ export default function DisparoCSV() {
 
       if (campaignError) throw campaignError;
 
+      // Detectar coluna de telefone
+      const phoneColumn = headers.find(h => 
+        ['numero', 'telefone', 'phone', 'celular', 'whatsapp', 'msisdn'].some(
+          term => h.toLowerCase().includes(term.toLowerCase())
+        )
+      );
+
       const items = csvData.map(row => {
         const params: any = {};
         const mappings = selectedTemplateObjs[0].mappings || {};
@@ -205,13 +212,27 @@ export default function DisparoCSV() {
           }
         });
 
+        // Pegar o número da coluna detectada e formatar
+        const rawPhone = phoneColumn ? row[phoneColumn] : 
+          (row.numero || row.telefone || row.phone || row.celular || row.whatsapp || "");
+        
+        const { formatted } = validateMSISDN(rawPhone);
+
         return {
           campaign_id: campaign.id,
-          msisdn: row.numero || row.telefone || row.phone || "",
+          msisdn: formatted, // Usar número formatado
           params,
           status: "pending",
         };
-      });
+      }).filter(item => item.msisdn); // Filtrar itens sem número válido
+
+      // Atualizar total_items com o número real de itens válidos
+      if (items.length !== csvData.length) {
+        await supabase
+          .from("campaigns")
+          .update({ total_items: items.length })
+          .eq("id", campaign.id);
+      }
 
       const { error: itemsError } = await supabase
         .from("campaign_items")
