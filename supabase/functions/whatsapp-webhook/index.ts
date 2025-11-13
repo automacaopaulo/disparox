@@ -20,10 +20,14 @@ Deno.serve(async (req) => {
     const verifyToken = Deno.env.get('WEBHOOK_VERIFY_TOKEN') || 'lovable_whatsapp_2025';
 
     if (mode === 'subscribe' && token === verifyToken) {
-      console.log('Webhook verificado com sucesso');
-      return new Response(challenge, { status: 200 });
+      console.log('✅ Webhook verificado com sucesso');
+      return new Response(challenge, { 
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' }
+      });
     }
 
+    console.log('❌ Verificação falhou - mode:', mode, 'token:', token);
     return new Response('Forbidden', { status: 403 });
   }
 
