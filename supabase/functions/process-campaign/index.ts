@@ -172,31 +172,53 @@ Deno.serve(async (req) => {
               components.push({ type: 'header', parameters: headerParams });
             }
 
-            // BUTTONS - adicionar componente de botões se tiverem variáveis
+            // 🔍 VALIDAR PARÂMETROS OBRIGATÓRIOS DE BOTÕES ANTES DE MONTAR
+            let missingButtonParams = false;
+            if (structure.buttons?.length > 0) {
+              for (const btn of structure.buttons) {
+                if (btn.type === 'URL' && btn.hasVars && btn.vars?.length > 0) {
+                  for (const v of btn.vars) {
+                    const paramValue = params[`button_${btn.index}_${v.index}`];
+                    if (!paramValue || paramValue.trim() === '') {
+                      console.log(`❌ Parâmetro obrigatório button_${btn.index}_${v.index} está vazio`);
+                      missingButtonParams = true;
+                      break;
+                    }
+                  }
+                  if (missingButtonParams) break;
+                }
+              }
+            }
+
+            // Se faltar parâmetro obrigatório de botão, marcar como falha SEM tentar enviar
+            if (missingButtonParams) {
+              await supabase
+                .from('campaign_items')
+                .update({
+                  status: 'failed',
+                  error_code: 'MISSING_BUTTON_PARAM',
+                  error_message: 'Parâmetro obrigatório de botão está vazio no CSV',
+                })
+                .eq('id', item.id);
+              failed += 1;
+              return; // Pula este item
+            }
+
+            // BUTTONS - adicionar componente de botões
             if (structure.buttons?.length > 0) {
               structure.buttons.forEach((btn: any, idx: number) => {
                 if (btn.type === 'URL' && btn.hasVars && btn.vars?.length > 0) {
-                  const buttonParams = btn.vars.map((v: any) => {
-                    const paramValue = params[`button_${idx}_${v.index}`];
-                    // Se o parâmetro estiver vazio, não adicionar o componente de botão
-                    if (!paramValue) {
-                      console.log(`⚠️ Parâmetro button_${idx}_${v.index} vazio, pulando botão`);
-                      return null;
-                    }
-                    return {
-                      type: 'text',
-                      text: sanitizeUrlParam(paramValue), // Usar sanitização específica para URL
-                    };
-                  }).filter(Boolean);
+                  const buttonParams = btn.vars.map((v: any) => ({
+                    type: 'text',
+                    text: sanitizeUrlParam(params[`button_${idx}_${v.index}`]),
+                  }));
 
-                  if (buttonParams.length > 0) {
-                    components.push({
-                      type: 'button',
-                      sub_type: 'url',
-                      index: idx.toString(), // Meta API requer string
-                      parameters: buttonParams,
-                    });
-                  }
+                  components.push({
+                    type: 'button',
+                    sub_type: 'url',
+                    index: idx.toString(),
+                    parameters: buttonParams,
+                  });
                 }
               });
             }
