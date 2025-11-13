@@ -65,7 +65,7 @@ const menuGroups = [
 
 export function AppSidebar() {
   return (
-    <Sidebar className="border-r border-border/40 w-64">
+    <Sidebar collapsible="none" className="border-r border-border/40">
       <SidebarContent className="gap-0">
         {/* Logo Section */}
         <div className="flex h-16 items-center px-6 border-b border-border/40">
