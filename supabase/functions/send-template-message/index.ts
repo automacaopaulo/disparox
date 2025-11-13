@@ -237,25 +237,17 @@ function buildParameter(type: string, value: any): any {
   }
 }
 
-// 📝 Sanitizar parâmetros de TEXTO (body/header) - PRESERVA quebras de linha
+// 📝 Sanitizar parâmetros de TEXTO (body/header) - Remove quebras e espaços excessivos
 function sanitizeTextParam(value: any): string {
   let s = (value ?? 'N/A').toString();
 
-  // Normalizar quebras de linha
-  s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // REMOVER quebras de linha e tabs (WhatsApp API não aceita!)
+  s = s.replace(/[\r\n\t\u000b]/g, ' ');
 
-  // Excel CHAR(11) / vertical tab -> também vira quebra de linha
-  s = s.replace(/\u000b/g, '\n');
-
-  // Tabs em espaço
-  s = s.replace(/\t/g, ' ');
-
-  // Limpar espaços excessivos em cada linha, mantendo as linhas
-  s = s
-    .split('\n')
-    .map((line: string) => line.replace(/ {2,}/g, ' ').trimEnd())
-    .join('\n')
-    .trim();
+  // Limpar espaços excessivos (máximo 3 espaços seguidos)
+  s = s.replace(/ {4,}/g, '   ');
+  s = s.replace(/\s{2,}/g, ' ');
+  s = s.trim();
 
   if (s.length > LIMITS.bodyParam) s = s.slice(0, LIMITS.bodyParam);
   if (!s) s = 'N/A';

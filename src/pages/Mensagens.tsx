@@ -81,6 +81,21 @@ export default function Mensagens() {
     },
   });
 
+  // Agrupar mensagens por data
+  const groupMessagesByDate = (messages: any[]) => {
+    const groups: Record<string, any[]> = {};
+    
+    messages.forEach(msg => {
+      const date = format(new Date(msg.created_at), 'dd/MM/yyyy');
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(msg);
+    });
+    
+    return groups;
+  };
+
   const conversations = messages?.reduce((acc: any, msg) => {
     const key = msg.msisdn;
     if (!acc[key]) {
@@ -118,6 +133,7 @@ export default function Mensagens() {
   const sortedMessages = selectedConv?.messages.sort((a: any, b: any) => 
     new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   );
+  const messagesByDate = sortedMessages ? groupMessagesByDate(sortedMessages) : {};
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -175,30 +191,44 @@ export default function Mensagens() {
         <Card>
           <CardContent className="p-4">
             <div className="space-y-4 max-h-[500px] overflow-y-auto mb-4">
-              {sortedMessages?.map((msg: any) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[70%] rounded-lg p-3 ${
-                      msg.direction === 'outbound'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    }`}
-                  >
-                    <div className="text-sm mb-1">
-                      {msg.content?.text?.body || msg.content?.body || "Mensagem sem conteúdo"}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs opacity-70 mt-2">
-                      <span>{format(new Date(msg.created_at), "dd/MM/yyyy HH:mm")}</span>
-                      {msg.status && (
-                        <Badge variant="outline" className={getStatusColor(msg.status)}>
-                          {getStatusLabel(msg.status)}
-                        </Badge>
-                      )}
-                    </div>
+              {Object.entries(messagesByDate).map(([date, msgs]) => (
+                <div key={date} className="space-y-3">
+                  {/* Separador de data */}
+                  <div className="flex items-center gap-3 my-4">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs font-medium text-muted-foreground px-3 py-1 bg-muted rounded-full">
+                      {date}
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
                   </div>
+                  
+                  {/* Mensagens do dia */}
+                  {(msgs as any[]).map((msg: any) => (
+                    <div
+                      key={msg.id}
+                      className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[70%] rounded-lg p-3 ${
+                          msg.direction === 'outbound'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
+                        <div className="text-sm mb-1 whitespace-pre-wrap">
+                          {msg.content?.text?.body || msg.content?.body || "Mensagem sem conteúdo"}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs opacity-70 mt-2">
+                          <span>{format(new Date(msg.created_at), "HH:mm")}</span>
+                          {msg.status && (
+                            <Badge variant="outline" className={getStatusColor(msg.status)}>
+                              {getStatusLabel(msg.status)}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
