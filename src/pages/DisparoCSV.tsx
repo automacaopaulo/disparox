@@ -95,13 +95,18 @@ export default function DisparoCSV() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
-      const lines = text.split("\n");
-      const headers = lines[0].split(",").map(h => h.trim());
+      const lines = text.split("\n").filter(line => line.trim());
+      
+      // Detectar delimitador (vírgula ou ponto-e-vírgula)
+      const firstLine = lines[0];
+      const delimiter = firstLine.includes(';') ? ';' : ',';
+      
+      const headers = firstLine.split(delimiter).map(h => h.trim());
       
       const data = lines.slice(1)
         .filter(line => line.trim())
         .map(line => {
-          const values = line.split(",");
+          const values = line.split(delimiter);
           const row: any = {};
           headers.forEach((header, index) => {
             row[header] = values[index]?.trim() || "";
@@ -206,7 +211,15 @@ export default function DisparoCSV() {
         Object.keys(mappings).forEach(varKey => {
           const mapping = mappings[varKey];
           if (mapping.type === "column" && mapping.value) {
-            params[varKey] = row[mapping.value] || "";
+            const value = row[mapping.value] || "";
+            // Se o parâmetro não pode ser vazio e está vazio, usar placeholder
+            if (!value && !mapping.omitIfEmpty) {
+              params[varKey] = "N/A";
+            } else if (value) {
+              params[varKey] = value;
+            } else {
+              params[varKey] = "";
+            }
           } else if (mapping.type === "fixed") {
             params[varKey] = mapping.value || "";
           }
@@ -588,6 +601,107 @@ export default function DisparoCSV() {
                 <span className="font-semibold text-success">~{Math.ceil(csvData.length / rate)} segundos</span>
               </div>
             </div>
+
+            {/* Preview da Mensagem */}
+            {selectedTemplateObjs.length > 0 && csvData.length > 0 && (
+              <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    📱 Preview da Mensagem no WhatsApp
+                  </CardTitle>
+                  <CardDescription>Exemplo com os dados da primeira linha do CSV</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 shadow-lg max-w-sm mx-auto">
+                    {/* Bubble de mensagem do WhatsApp */}
+                    <div className="bg-[#DCF8C6] dark:bg-[#005C4B] rounded-lg p-3 space-y-2">
+                      {(() => {
+                        const template = selectedTemplateObjs[0];
+                        const firstRow = csvData[0];
+                        const mappings = template.mappings as any || {};
+                        const structure = template.structure as any;
+                        
+                        // Substituir variáveis no texto
+                        let bodyText = structure.body?.text || "";
+                        if (structure.body?.vars) {
+                          structure.body.vars.forEach((v: any) => {
+                            const paramKey = `body_${v.index}`;
+                            const mapping = mappings[paramKey];
+                            let value = "N/A";
+                            
+                            if (mapping?.type === "column" && mapping.value) {
+                              value = firstRow[mapping.value] || "N/A";
+                            } else if (mapping?.type === "fixed") {
+                              value = mapping.value || "N/A";
+                            }
+                            
+                            bodyText = bodyText.replace(`{{${v.index}}}`, value);
+                          });
+                        }
+                        
+                        return (
+                          <>
+                            <p className="text-sm text-zinc-800 dark:text-zinc-100 whitespace-pre-wrap">
+                              {bodyText}
+                            </p>
+                            
+                            {/* Botões */}
+                            {structure.buttons?.map((btn: any, idx: number) => {
+                              if (btn.type === "URL") {
+                                let btnUrl = btn.urlPattern || btn.url || "";
+                                
+                                if (btn.hasVars && btn.vars) {
+                                  btn.vars.forEach((v: any) => {
+                                    const paramKey = `button_${idx}_${v.index}`;
+                                    const mapping = mappings[paramKey];
+                                    let value = "";
+                                    
+                                    if (mapping?.type === "column" && mapping.value) {
+                                      value = firstRow[mapping.value] || "";
+                                    } else if (mapping?.type === "fixed") {
+                                      value = mapping.value || "";
+                                    }
+                                    
+                                    btnUrl = btnUrl.replace(`{{${v.index}}}`, value);
+                                  });
+                                }
+                                
+                                return (
+                                  <div key={idx} className="mt-2 pt-2 border-t border-zinc-400/30">
+                                    <button className="w-full text-center text-sm text-blue-600 dark:text-blue-400 font-medium py-1">
+                                      🔗 {btn.text}
+                                    </button>
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center truncate">
+                                      {btnUrl}
+                                    </p>
+                                  </div>
+                                );
+                              }
+                              
+                              if (btn.type === "QUICK_REPLY") {
+                                return (
+                                  <div key={idx} className="mt-2 pt-2 border-t border-zinc-400/30">
+                                    <button className="w-full text-center text-sm text-blue-600 dark:text-blue-400 font-medium py-1">
+                                      💬 {btn.text}
+                                    </button>
+                                  </div>
+                                );
+                              }
+                              
+                              return null;
+                            })}
+                          </>
+                        );
+                      })()}
+                      
+                      <p className="text-xs text-zinc-600 dark:text-zinc-400 text-right mt-2">
+                        12:00
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {!allHaveMappings && (
               <Card className="border-warning bg-warning/5">
