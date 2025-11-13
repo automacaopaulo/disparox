@@ -13,9 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, Send, FileText, ChevronRight, CheckCircle2, AlertCircle, Zap } from "lucide-react";
+import { Loader2, Upload, Send, FileText, ChevronRight, CheckCircle2, AlertCircle, Zap, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { TemplateMappingDialog } from "@/components/TemplateMappingDialog";
 
 export default function DisparoCSV() {
   const { toast } = useToast();
@@ -27,6 +28,7 @@ export default function DisparoCSV() {
   const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
   const [rate, setRate] = useState(40);
   const [campaignName, setCampaignName] = useState("");
+  const [mappingDialogTemplate, setMappingDialogTemplate] = useState<any>(null);
   const [validationResults, setValidationResults] = useState<{
     valid: number;
     invalid: number;
@@ -493,38 +495,80 @@ export default function DisparoCSV() {
               <Label className="text-base">Templates * (múltiplos para fallback)</Label>
               <div className="border-2 rounded-xl p-4 space-y-2 max-h-60 overflow-y-auto bg-muted/30">
                 {templates?.map((template) => (
-                  <label
+                  <div
                     key={template.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-background cursor-pointer transition-colors"
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+                      selectedTemplates.includes(template.id)
+                        ? "bg-primary/10 border-2 border-primary"
+                        : "hover:bg-background border-2 border-transparent"
+                    }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={selectedTemplates.includes(template.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedTemplates([...selectedTemplates, template.id]);
-                        } else {
-                          setSelectedTemplates(selectedTemplates.filter(id => id !== template.id));
-                        }
-                      }}
-                      disabled={!selectedNumber}
-                      className="w-5 h-5 rounded border-2 text-primary focus:ring-primary"
-                    />
-                    <div className="flex-1">
-                      <span className="font-medium">{template.name}</span>
-                      {selectedTemplates.includes(template.id) && (
-                        <Badge className="ml-2 bg-primary text-xs">
-                          #{selectedTemplates.indexOf(template.id) + 1}
-                        </Badge>
-                      )}
-                    </div>
-                  </label>
+                    <label className="flex items-center gap-3 flex-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedTemplates.includes(template.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedTemplates([...selectedTemplates, template.id]);
+                          } else {
+                            setSelectedTemplates(selectedTemplates.filter(id => id !== template.id));
+                          }
+                        }}
+                        disabled={!selectedNumber}
+                        className="w-5 h-5 rounded border-2 text-primary focus:ring-primary"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{template.name}</span>
+                          {selectedTemplates.includes(template.id) && (
+                            <Badge className="bg-primary text-xs">
+                              #{selectedTemplates.indexOf(template.id) + 1}
+                            </Badge>
+                          )}
+                          {template.mappings && Object.keys(template.mappings).length > 0 ? (
+                            <Badge variant="outline" className="text-xs border-success text-success">
+                              ✓ Mapeado
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs border-warning text-warning">
+                              ! Sem mapeamento
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </label>
+                    {selectedTemplates.includes(template.id) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMappingDialogTemplate(template)}
+                        className="shrink-0"
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Mapear
+                      </Button>
+                    )}
+                  </div>
                 ))}
               </div>
               <p className="text-xs text-muted-foreground flex items-start gap-2 mt-2">
                 <span>💡</span>
                 <span>Selecione múltiplos templates. Se o 1º falhar (pausado), tentará o 2º automaticamente.</span>
               </p>
+              
+              {/* Aviso de mapeamento */}
+              {selectedTemplates.length > 0 && !allHaveMappings && (
+                <div className="mt-3 p-3 bg-warning/10 border border-warning/30 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                  <div className="text-xs text-warning-foreground">
+                    <p className="font-medium mb-1">⚠️ Mapeamento necessário</p>
+                    <p>
+                      Alguns templates selecionados ainda não têm mapeamento configurado. 
+                      Clique em <strong>"Mapear"</strong> ao lado de cada template para configurar como as variáveis serão preenchidas.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -739,6 +783,16 @@ export default function DisparoCSV() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Dialog de Mapeamento */}
+      {mappingDialogTemplate && (
+        <TemplateMappingDialog
+          template={mappingDialogTemplate}
+          open={!!mappingDialogTemplate}
+          onOpenChange={(open) => !open && setMappingDialogTemplate(null)}
+          csvHeaders={headers}
+        />
       )}
     </div>
   );
