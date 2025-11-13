@@ -19,6 +19,7 @@ import Mensagens from "./pages/Mensagens";
 import OptOut from "./pages/OptOut";
 import Analytics from "./pages/Analytics";
 import ConfiguracoesUnificado from "./pages/ConfiguracoesUnificado";
+import ErrorAnalysis from "./pages/ErrorAnalysis";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -46,6 +47,7 @@ const App = () => (
                       <Route path="/templates" element={<Templates />} />
                       <Route path="/disparos" element={<Disparos />} />
                       <Route path="/campanhas" element={<Campanhas />} />
+                      <Route path="/campanhas/:campaignId/erros" element={<ErrorAnalysis />} />
                       <Route path="/automacao" element={<Automacao />} />
               <Route path="/contatos" element={<ContatosUnificado />} />
               <Route path="/mensagens" element={<Mensagens />} />
