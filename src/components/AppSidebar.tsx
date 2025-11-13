@@ -64,7 +64,7 @@ const menuGroups = [
 
 export function AppSidebar() {
   return (
-    <Sidebar collapsible="none" className="border-r border-border/40">
+    <Sidebar collapsible="none" className="border-r border-border/40 bg-background">
       <SidebarContent className="gap-0">
         {/* Logo Section */}
         <div className="flex h-16 items-center px-6 border-b border-border/40">
@@ -74,7 +74,7 @@ export function AppSidebar() {
         {/* Menu Groups */}
         {menuGroups.map((group, groupIndex) => (
           <SidebarGroup key={group.label} className="px-3 py-4">
-            <SidebarGroupLabel className="mb-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: 'hsl(var(--foreground) / 0.7)' }}>
+            <SidebarGroupLabel className="px-3 text-[11px] font-semibold tracking-[0.16em] text-muted-foreground/70 uppercase mb-2">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -84,13 +84,11 @@ export function AppSidebar() {
                     <NavLink 
                       to={item.url} 
                       end
-                      className="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all hover:bg-accent"
-                      style={{ color: 'hsl(var(--foreground))' }}
-                      activeClassName="bg-primary shadow-sm [&>span:first-child]:opacity-100"
+                      className="group flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      activeClassName="bg-primary/10 text-primary [&>svg]:text-primary"
                     >
-                      <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary-foreground opacity-0 transition-opacity" />
-                      <item.icon className="h-[18px] w-[18px] shrink-0" style={{ color: 'inherit' }} />
-                      <span className="truncate" style={{ color: 'inherit' }}>{item.title}</span>
+                      <item.icon className="h-4 w-4 shrink-0 transition-colors" />
+                      <span className="truncate">{item.title}</span>
                     </NavLink>
                   </SidebarMenuItem>
                 ))}
