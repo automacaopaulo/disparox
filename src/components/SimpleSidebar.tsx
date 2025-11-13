@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { 
   Home, Phone, Layers, Send, MessageSquare, Workflow, 
-  Users, UserX, BarChart3, Settings
+  Users, UserX, BarChart3, Settings, Mail
 } from "lucide-react";
 
 const menuItems = [
@@ -12,6 +12,7 @@ const menuItems = [
   { title: "Campanhas", url: "/campanhas", icon: MessageSquare },
   { title: "Automação", url: "/automacao", icon: Workflow },
   { title: "Contatos", url: "/contatos", icon: Users },
+  { title: "Mensagens", url: "/mensagens", icon: Mail },
   { title: "Opt-Out", url: "/opt-out", icon: UserX },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Configurações", url: "/configuracoes", icon: Settings },

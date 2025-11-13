@@ -13,6 +13,7 @@ import Disparos from "./pages/Disparos";
 import Campanhas from "./pages/Campanhas";
 import Automacao from "./pages/Automacao";
 import ContatosUnificado from "./pages/ContatosUnificado";
+import Mensagens from "./pages/Mensagens";
 import OptOut from "./pages/OptOut";
 import Analytics from "./pages/Analytics";
 import ConfiguracoesUnificado from "./pages/ConfiguracoesUnificado";
@@ -42,9 +43,10 @@ const App = () => (
                       <Route path="/disparos" element={<Disparos />} />
                       <Route path="/campanhas" element={<Campanhas />} />
                       <Route path="/automacao" element={<Automacao />} />
-                      <Route path="/contatos" element={<ContatosUnificado />} />
-                      <Route path="/opt-out" element={<OptOut />} />
-                      <Route path="/analytics" element={<Analytics />} />
+              <Route path="/contatos" element={<ContatosUnificado />} />
+              <Route path="/mensagens" element={<Mensagens />} />
+              <Route path="/opt-out" element={<OptOut />} />
+              <Route path="/analytics" element={<Analytics />} />
                       <Route path="/configuracoes" element={<ConfiguracoesUnificado />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

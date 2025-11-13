@@ -1,19 +1,25 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MessageSquare, Search, User, Phone, Clock, CheckCheck } from "lucide-react";
+import { MessageSquare, Search, Send, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { EmptyState } from "@/components/EmptyState";
 import { TableSkeleton } from "@/components/SkeletonLoader";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Mensagens() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [directionFilter, setDirectionFilter] = useState("all");
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
   const [selectedNumber, setSelectedNumber] = useState("all");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: whatsappNumbers } = useQuery({
     queryKey: ["whatsapp_numbers"],
@@ -44,6 +50,37 @@ export default function Mensagens() {
     refetchInterval: 5000,
   });
 
+  const sendReplyMutation = useMutation({
+    mutationFn: async ({ msisdn, text, whatsappNumberId }: { msisdn: string; text: string; whatsappNumberId: string }) => {
+      const { data, error } = await supabase.functions.invoke("send-template-message", {
+        body: {
+          to: msisdn,
+          type: "text",
+          text: { body: text },
+          whatsapp_number_id: whatsappNumberId,
+        },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Mensagem enviada",
+        description: "Sua resposta foi enviada com sucesso",
+      });
+      setReplyText("");
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao enviar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const conversations = messages?.reduce((acc: any, msg) => {
     const key = msg.msisdn;
     if (!acc[key]) {
@@ -52,6 +89,7 @@ export default function Mensagens() {
         messages: [],
         lastMessage: msg.created_at,
         hasInbound: false,
+        whatsappNumberId: msg.whatsapp_number_id,
       };
     }
     acc[key].messages.push(msg);
@@ -65,8 +103,6 @@ export default function Mensagens() {
     .sort((a: any, b: any) => new Date(b.lastMessage).getTime() - new Date(a.lastMessage).getTime())
     .filter((conv: any) => {
       if (searchQuery && !conv.msisdn.includes(searchQuery)) return false;
-      if (directionFilter === "inbound" && !conv.hasInbound) return false;
-      if (directionFilter === "outbound" && conv.hasInbound) return false;
       
       if (selectedNumber !== "all") {
         const hasMessageFromNumber = conv.messages.some(
@@ -78,17 +114,22 @@ export default function Mensagens() {
       return true;
     });
 
+  const selectedConv = conversations?.[selectedConversation || ""];
+  const sortedMessages = selectedConv?.messages.sort((a: any, b: any) => 
+    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "delivered":
       case "received":
-        return "bg-primary text-primary-foreground";
+        return "bg-primary/20 text-primary";
       case "read":
-        return "bg-success text-success-foreground";
+        return "bg-green-500/20 text-green-700";
       case "sent":
-        return "bg-warning text-warning-foreground";
+        return "bg-yellow-500/20 text-yellow-700";
       case "failed":
-        return "bg-destructive text-destructive-foreground";
+        return "bg-destructive/20 text-destructive";
       default:
         return "bg-muted text-muted-foreground";
     }
@@ -106,199 +147,178 @@ export default function Mensagens() {
     }
   };
 
+  const handleSendReply = () => {
+    if (!replyText.trim() || !selectedConv) return;
+    
+    sendReplyMutation.mutate({
+      msisdn: selectedConv.msisdn,
+      text: replyText,
+      whatsappNumberId: selectedConv.whatsappNumberId,
+    });
+  };
+
+  if (selectedConversation && selectedConv) {
+    return (
+      <div className="space-y-4 max-w-[1400px] mx-auto">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedConversation(null)}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+          <h1 className="text-2xl font-bold">Conversa com {selectedConv.msisdn}</h1>
+        </div>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="space-y-4 max-h-[500px] overflow-y-auto mb-4">
+              {sortedMessages?.map((msg: any) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[70%] rounded-lg p-3 ${
+                      msg.direction === 'outbound'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                    }`}
+                  >
+                    <div className="text-sm mb-1">
+                      {msg.content?.text?.body || msg.content?.body || "Mensagem sem conteúdo"}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs opacity-70 mt-2">
+                      <span>{format(new Date(msg.created_at), "dd/MM/yyyy HH:mm")}</span>
+                      {msg.status && (
+                        <Badge variant="outline" className={getStatusColor(msg.status)}>
+                          {getStatusLabel(msg.status)}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="Digite sua resposta..."
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                className="min-h-[80px]"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendReply();
+                  }
+                }}
+              />
+              <Button
+                onClick={handleSendReply}
+                disabled={!replyText.trim() || sendReplyMutation.isPending}
+                className="self-end"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto">
-      <div className="section-header">
-        <h1 className="section-title flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-xl">
-            <MessageSquare className="h-7 w-7 text-primary" />
-          </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold flex items-center gap-3">
+          <MessageSquare className="h-7 w-7" />
           Mensagens
         </h1>
-        <p className="section-description">
-          Histórico completo de mensagens e conversas com leads
-        </p>
       </div>
 
-      {/* Filtros Premium */}
-      <Card className="premium-card">
-        <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="relative">
-              <Search className="absolute left-4 top-4 h-5 w-5 text-muted-foreground" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Conversas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4 mb-6">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por número..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12"
+                className="pl-9"
               />
             </div>
-            
-            <Select value={directionFilter} onValueChange={setDirectionFilter}>
-              <SelectTrigger className="h-12">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">📱 Todas as Conversas</SelectItem>
-                <SelectItem value="inbound">📩 Com Respostas de Leads</SelectItem>
-                <SelectItem value="outbound">📤 Apenas Enviadas</SelectItem>
-              </SelectContent>
-            </Select>
-
             <Select value={selectedNumber} onValueChange={setSelectedNumber}>
-              <SelectTrigger className="h-12">
-                <SelectValue />
+              <SelectTrigger className="w-[250px]">
+                <SelectValue placeholder="Filtrar por número" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">📱 Todos os Números</SelectItem>
+                <SelectItem value="all">Todos os números</SelectItem>
                 {whatsappNumbers?.map((num) => (
                   <SelectItem key={num.id} value={num.id}>
-                    {num.display_name || num.phone_number_id || 'Sem nome'}
+                    {num.display_name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {isLoading ? (
+            <TableSkeleton />
+          ) : conversationList.length === 0 ? (
+            <EmptyState
+              icon={MessageSquare}
+              title="Nenhuma conversa encontrada"
+              description="Quando seus contatos enviarem mensagens, elas aparecerão aqui"
+            />
+          ) : (
+            <div className="space-y-2">
+              {conversationList.map((conv: any) => {
+                const lastMsg = conv.messages[0];
+                const inboundCount = conv.messages.filter((m: any) => m.direction === 'inbound').length;
+                const outboundCount = conv.messages.filter((m: any) => m.direction === 'outbound').length;
+
+                return (
+                  <Card
+                    key={conv.msisdn}
+                    className="cursor-pointer hover:bg-accent transition-colors"
+                    onClick={() => setSelectedConversation(conv.msisdn)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold">{conv.msisdn}</h3>
+                            {lastMsg.status && (
+                              <Badge variant="outline" className={getStatusColor(lastMsg.status)}>
+                                {getStatusLabel(lastMsg.status)}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {lastMsg.content?.text?.body || lastMsg.content?.body || "Mensagem sem conteúdo"}
+                          </p>
+                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                            <span>{format(new Date(lastMsg.created_at), "dd/MM/yyyy HH:mm")}</span>
+                            <span>{inboundCount} recebidas</span>
+                            <span>{outboundCount} enviadas</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {conversationList.filter((c: any) => c.hasInbound).length === 0 && (
-        <Card className="premium-card border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-primary/10 rounded-xl">
-                <MessageSquare className="h-6 w-6 text-primary" />
-              </div>
-              <div className="space-y-2">
-                <p className="font-semibold text-lg">Configure o Webhook para Ver Respostas!</p>
-                <p className="text-muted-foreground">
-                  Para receber as mensagens dos leads em tempo real, configure o webhook em{" "}
-                  <a href="/configuracoes" className="text-primary hover:underline font-medium">Configurações → Webhook</a>
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {isLoading && <TableSkeleton rows={6} />}
-
-      {!isLoading && conversationList.length === 0 && (
-        <EmptyState
-          icon={MessageSquare}
-          title="Nenhuma mensagem encontrada"
-          description="Quando você enviar mensagens, elas aparecerão aqui"
-        />
-      )}
-
-      {/* Conversas Premium */}
-      <div className="grid gap-6">
-        {conversationList.map((conversation: any) => {
-          const lastMsg = conversation.messages[0];
-          const inboundCount = conversation.messages.filter((m: any) => m.direction === 'inbound').length;
-          
-          return (
-            <Card key={conversation.msisdn} className="premium-card hover:shadow-xl transition-all">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                      conversation.hasInbound ? 'bg-success/10' : 'bg-muted/50'
-                    }`}>
-                      {conversation.hasInbound ? (
-                        <User className="h-7 w-7 text-success" />
-                      ) : (
-                        <Phone className="h-7 w-7 text-muted-foreground" />
-                      )}
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl font-mono">{conversation.msisdn}</CardTitle>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {conversation.messages.length} mensagens
-                        </Badge>
-                        {inboundCount > 0 && (
-                          <Badge className="text-xs bg-success">
-                            📩 {inboundCount} respostas
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <Badge className={getStatusColor(lastMsg.status)}>
-                    {getStatusLabel(lastMsg.status)}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {conversation.messages.slice(0, 10).map((msg: any) => (
-                    <div
-                      key={msg.id}
-                      className={`p-4 rounded-xl border-l-4 ${
-                        msg.direction === 'inbound'
-                          ? 'bg-success/5 border-success ml-6'
-                          : 'bg-muted/30 border-border mr-6'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          {msg.direction === 'inbound' ? (
-                            <Badge className="text-xs bg-success">
-                              📩 Lead Respondeu
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              📤 Você Enviou
-                            </Badge>
-                          )}
-                          {msg.template_name && (
-                            <Badge variant="secondary" className="text-xs font-mono">
-                              {msg.template_name}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(msg.created_at), "dd/MM HH:mm")}
-                        </div>
-                      </div>
-                      
-                      {msg.content && (
-                        <div className="text-sm mt-3">
-                          {typeof msg.content === 'object' ? (
-                            msg.content.text?.body ? (
-                              <p className="leading-relaxed">{msg.content.text.body}</p>
-                            ) : (
-                              <pre className="text-xs bg-background p-3 rounded-lg overflow-x-auto font-mono">
-                                {JSON.stringify(msg.content, null, 2)}
-                              </pre>
-                            )
-                          ) : (
-                            <p className="leading-relaxed">{msg.content}</p>
-                          )}
-                        </div>
-                      )}
-                      
-                      {msg.error_message && (
-                        <div className="text-xs text-destructive mt-3 p-2 bg-destructive/10 rounded">
-                          ❌ {msg.error_message}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                
-                {conversation.messages.length > 10 && (
-                  <p className="text-xs text-muted-foreground text-center pt-2">
-                    + {conversation.messages.length - 10} mensagens mais antigas
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
     </div>
   );
 }
