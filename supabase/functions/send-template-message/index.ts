@@ -75,7 +75,13 @@ Deno.serve(async (req) => {
           const varIndex = typeof v === 'number' ? v : v.index;
           const varType = typeof v === 'object' ? v.type : 'text';
           const value = parameters[`header_${varIndex}`] || 'N/A';
-          return buildParameter(varType, value);
+          const param = buildParameter(varType, value);
+          
+          // 🐛 DEBUG: Log temporário para verificar quebras de linha
+          console.log(`DEBUG header_${varIndex} RAW:`, value);
+          console.log(`DEBUG header_${varIndex} FINAL:`, JSON.stringify(param));
+          
+          return param;
         });
         components.push({ type: 'header', parameters: params });
       } else if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(structure.header.format)) {
@@ -93,7 +99,13 @@ Deno.serve(async (req) => {
         const varIndex = typeof v === 'number' ? v : v.index;
         const varType = typeof v === 'object' ? v.type : 'text';
         const value = parameters[`body_${varIndex}`] || 'N/A';
-        return buildParameter(varType, value);
+        const param = buildParameter(varType, value);
+        
+        // 🐛 DEBUG: Log temporário para verificar quebras de linha
+        console.log(`DEBUG body_${varIndex} RAW:`, value);
+        console.log(`DEBUG body_${varIndex} FINAL:`, JSON.stringify(param));
+        
+        return param;
       });
       components.push({ type: 'body', parameters: params });
     }

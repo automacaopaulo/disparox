@@ -166,10 +166,15 @@ Deno.serve(async (req) => {
               const bodyParams = structure.body.vars.map((v: any) => {
                 const varIndex = typeof v === 'number' ? v : (v.index || v);
                 const paramValue = params[`body_${varIndex}`];
-                console.log(`  body_${varIndex}: "${paramValue}"`);
+                const sanitizedValue = sanitizeTextParam(paramValue || 'N/A');
+                
+                // 🐛 DEBUG: Log temporário para verificar quebras de linha
+                console.log(`  body_${varIndex} RAW:`, paramValue);
+                console.log(`  body_${varIndex} SANITIZADO:`, JSON.stringify(sanitizedValue));
+                
                 return {
                   type: 'text',
-                  text: sanitizeTextParam(paramValue || 'N/A'),
+                  text: sanitizedValue,
                 };
               });
               components.push({ type: 'body', parameters: bodyParams });
@@ -180,10 +185,15 @@ Deno.serve(async (req) => {
               const headerParams = structure.header.vars.map((v: any) => {
                 const varIndex = typeof v === 'number' ? v : (v.index || v);
                 const paramValue = params[`header_${varIndex}`];
-                console.log(`  header_${varIndex}: "${paramValue}"`);
+                const sanitizedValue = sanitizeTextParam(paramValue || 'N/A');
+                
+                // 🐛 DEBUG: Log temporário para verificar quebras de linha
+                console.log(`  header_${varIndex} RAW:`, paramValue);
+                console.log(`  header_${varIndex} SANITIZADO:`, JSON.stringify(sanitizedValue));
+                
                 return {
                   type: 'text',
-                  text: sanitizeTextParam(paramValue || 'N/A'),
+                  text: sanitizedValue,
                 };
               });
               components.push({ type: 'header', parameters: headerParams });
