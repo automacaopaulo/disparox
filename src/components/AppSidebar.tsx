@@ -75,7 +75,7 @@ export function AppSidebar() {
         {/* Menu Groups */}
         {menuGroups.map((group, groupIndex) => (
           <SidebarGroup key={group.label} className="px-3 py-4">
-            <SidebarGroupLabel className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+            <SidebarGroupLabel className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-foreground">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
