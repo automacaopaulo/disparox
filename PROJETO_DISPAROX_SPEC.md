@@ -1421,7 +1421,724 @@ USING (bucket_id = 'campaign-csvs' AND auth.uid() IS NOT NULL);
 
 ---
 
-## 17. CONTATOS E SUPORTE
+## 17. IMPLEMENTAÇÃO EM LARAVEL + HTML/TAILWIND/JS PURO
+
+Esta seção fornece um guia completo para reimplementar o DisparoX usando Laravel no backend e HTML/CSS (Tailwind)/JavaScript puro no frontend.
+
+### 17.1 Estrutura Backend Laravel
+
+#### 17.1.1 Setup Inicial
+```bash
+composer create-project laravel/laravel disparox
+cd disparox
+composer require laravel/sanctum
+composer require maatwebsite/excel
+composer require guzzlehttp/guzzle
+php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+php artisan migrate
+```
+
+#### 17.1.2 Models Laravel
+
+**app/Models/WhatsappNumber.php**:
+```php
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class WhatsappNumber extends Model
+{
+    protected $fillable = [
+        'user_id', 'name', 'phone_number_id', 'phone_number',
+        'waba_id', 'business_account_id', 'access_token',
+        'display_name', 'quality_rating', 'is_active'
+    ];
+
+    protected $hidden = ['access_token'];
+    protected $casts = ['is_active' => 'boolean'];
+
+    public function templates() {
+        return $this->hasMany(Template::class);
+    }
+}
+```
+
+**app/Models/Campaign.php**:
+```php
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Campaign extends Model
+{
+    protected $fillable = [
+        'user_id', 'whatsapp_number_id', 'name', 'template_name',
+        'language', 'status', 'csv_file_url', 'total_items',
+        'sent', 'delivered', 'read', 'failed', 'processing_rate', 'error_summary'
+    ];
+
+    protected $casts = [
+        'error_summary' => 'array',
+        'processing_rate' => 'integer',
+    ];
+
+    public function items() {
+        return $this->hasMany(CampaignItem::class);
+    }
+}
+```
+
+#### 17.1.3 Controllers Laravel
+
+**app/Http/Controllers/Api/TemplateController.php**:
+```php
+<?php
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\WhatsappNumber;
+use App\Models\Template;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+
+class TemplateController extends Controller
+{
+    public function fetch(Request $request)
+    {
+        $request->validate([
+            'whatsapp_number_id' => 'required|uuid|exists:whatsapp_numbers,id'
+        ]);
+
+        $whatsappNumber = WhatsappNumber::findOrFail($request->whatsapp_number_id);
+        $url = "https://graph.facebook.com/v21.0/{$whatsappNumber->waba_id}/message_templates";
+        
+        $response = Http::withToken($whatsappNumber->access_token)
+            ->get($url, [
+                'fields' => 'name,status,language,components',
+                'status' => 'APPROVED',
+                'limit' => 100
+            ]);
+
+        if (!$response->successful()) {
+            return response()->json(['error' => 'Failed to fetch templates'], $response->status());
+        }
+
+        $templates = $response->json()['data'] ?? [];
+
+        foreach ($templates as $tpl) {
+            Template::updateOrCreate(
+                [
+                    'whatsapp_number_id' => $whatsappNumber->id,
+                    'name' => $tpl['name'],
+                    'language' => $tpl['language']
+                ],
+                [
+                    'user_id' => auth()->id(),
+                    'status' => $tpl['status'],
+                    'structure' => $tpl,
+                    'is_active' => true
+                ]
+            );
+        }
+
+        return response()->json(['success' => true, 'count' => count($templates)]);
+    }
+}
+```
+
+**app/Http/Controllers/Api/MessageController.php**:
+```php
+<?php
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\WhatsappNumber;
+use App\Models\Template;
+use App\Models\Message;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+
+class MessageController extends Controller
+{
+    public function sendTemplate(Request $request)
+    {
+        $request->validate([
+            'whatsappNumberId' => 'required|uuid',
+            'to' => 'required|string',
+            'templateName' => 'required|string',
+            'language' => 'string',
+            'parameters' => 'array'
+        ]);
+
+        $whatsappNumber = WhatsappNumber::findOrFail($request->whatsappNumberId);
+        $template = Template::where('whatsapp_number_id', $whatsappNumber->id)
+            ->where('name', $request->templateName)
+            ->firstOrFail();
+
+        $components = $this->buildComponents($template, $request->parameters ?? []);
+
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'to' => $this->sanitizeNumber($request->to),
+            'type' => 'template',
+            'template' => [
+                'name' => $request->templateName,
+                'language' => ['code' => $request->language ?? 'pt_BR'],
+                'components' => $components
+            ]
+        ];
+
+        $url = "https://graph.facebook.com/v21.0/{$whatsappNumber->phone_number_id}/messages";
+        
+        $response = Http::withToken($whatsappNumber->access_token)->post($url, $payload);
+
+        Message::create([
+            'whatsapp_number_id' => $whatsappNumber->id,
+            'direction' => 'outbound',
+            'msisdn' => $payload['to'],
+            'template_name' => $request->templateName,
+            'content' => $payload,
+            'status' => $response->successful() ? 'sent' : 'failed',
+            'message_id' => $response->json()['messages'][0]['id'] ?? null,
+            'error_message' => $response->successful() ? null : $response->body(),
+            'error_code' => $response->json()['error']['code'] ?? null
+        ]);
+
+        if (!$response->successful()) {
+            return response()->json(['success' => false, 'error' => $response->json()], $response->status());
+        }
+
+        return response()->json(['success' => true, 'messageId' => $response->json()['messages'][0]['id']]);
+    }
+
+    /**
+     * CRÍTICO: Sanitização de parâmetros (remove \r\n\t)
+     */
+    private function sanitizeTextParam($value): string
+    {
+        $s = strval($value ?? 'N/A');
+        $s = preg_replace('/[\r\n\t]/', ' ', $s);
+        $s = preg_replace('/ {2,}/', ' ', $s);
+        $s = trim($s);
+        if (strlen($s) > 1024) $s = substr($s, 0, 1024);
+        return $s ?: 'N/A';
+    }
+
+    private function sanitizeNumber($number): string
+    {
+        $n = preg_replace('/\D/', '', $number);
+        if (!str_starts_with($n, '55') && strlen($n) >= 10) {
+            $n = '55' . $n;
+        }
+        return $n;
+    }
+
+    private function buildComponents(Template $template, array $params): array
+    {
+        $components = [];
+        $structure = $template->structure['components'] ?? [];
+
+        foreach ($structure as $component) {
+            $type = strtolower($component['type']);
+
+            if ($type === 'body') {
+                $vars = $this->extractVars($component['text'] ?? '');
+                if (count($vars) > 0) {
+                    $parameters = [];
+                    foreach ($vars as $n) {
+                        $parameters[] = [
+                            'type' => 'text',
+                            'text' => $this->sanitizeTextParam($params["body_{$n}"] ?? '')
+                        ];
+                    }
+                    $components[] = ['type' => 'body', 'parameters' => $parameters];
+                }
+            } elseif ($type === 'header') {
+                $format = strtoupper($component['format'] ?? 'TEXT');
+                if ($format === 'TEXT') {
+                    $vars = $this->extractVars($component['text'] ?? '');
+                    if (count($vars) > 0) {
+                        $parameters = [];
+                        foreach ($vars as $n) {
+                            $parameters[] = [
+                                'type' => 'text',
+                                'text' => $this->sanitizeTextParam($params["header_{$n}"] ?? '')
+                            ];
+                        }
+                        $components[] = ['type' => 'header', 'parameters' => $parameters];
+                    }
+                }
+            } elseif ($type === 'buttons') {
+                foreach ($component['buttons'] ?? [] as $idx => $btn) {
+                    if (strtoupper($btn['type']) === 'URL') {
+                        $urlPattern = $btn['url'] ?? '';
+                        $vars = $this->extractVars($urlPattern);
+                        if (count($vars) > 0) {
+                            $parameters = [];
+                            foreach ($vars as $n) {
+                                $parameters[] = [
+                                    'type' => 'text',
+                                    'text' => urlencode($params["button_{$idx}_{$n}"] ?? '')
+                                ];
+                            }
+                            $components[] = [
+                                'type' => 'button',
+                                'sub_type' => 'url',
+                                'index' => strval($idx),
+                                'parameters' => $parameters
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+
+        return $components;
+    }
+
+    private function extractVars(string $text): array
+    {
+        preg_match_all('/\{\{(\d+)\}\}/', $text, $matches);
+        return array_unique($matches[1] ?? []);
+    }
+}
+```
+
+#### 17.1.4 Jobs Laravel (Queue)
+
+**app/Jobs/ProcessCampaignJob.php**:
+```php
+<?php
+namespace App\Jobs;
+
+use App\Models\Campaign;
+use App\Models\CampaignItem;
+use App\Models\WhatsappNumber;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Http;
+
+class ProcessCampaignJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public $campaignId;
+    public $timeout = 3600;
+
+    public function __construct(string $campaignId)
+    {
+        $this->campaignId = $campaignId;
+    }
+
+    public function handle()
+    {
+        $campaign = Campaign::findOrFail($this->campaignId);
+        $campaign->update(['status' => 'processing']);
+
+        $whatsappNumber = WhatsappNumber::findOrFail($campaign->whatsapp_number_id);
+        $rate = $campaign->processing_rate ?? 40;
+
+        $items = CampaignItem::where('campaign_id', $campaign->id)
+            ->where('status', 'pending')
+            ->get();
+
+        $chunks = $items->chunk($rate);
+        $sent = 0;
+        $failed = 0;
+
+        foreach ($chunks as $chunk) {
+            foreach ($chunk as $item) {
+                $result = $this->sendMessage($whatsappNumber, $campaign, $item);
+                
+                if ($result['success']) {
+                    $sent++;
+                    $item->update(['status' => 'sent', 'message_id' => $result['message_id']]);
+                } else {
+                    $failed++;
+                    $item->update([
+                        'status' => 'failed',
+                        'error_code' => $result['error_code'],
+                        'error_message' => $result['error_message'],
+                        'retry_count' => $item->retry_count + 1
+                    ]);
+                }
+            }
+
+            if (!$chunks->last() === $chunk) {
+                sleep(1); // Rate limiting
+            }
+        }
+
+        $campaign->update(['status' => 'completed', 'sent' => $sent, 'failed' => $failed]);
+    }
+
+    private function sendMessage($whatsappNumber, $campaign, $item): array
+    {
+        // Implementar lógica de envio similar ao MessageController
+        return ['success' => true, 'message_id' => 'wamid.xxx'];
+    }
+}
+```
+
+#### 17.1.5 Routes Laravel
+
+**routes/api.php**:
+```php
+<?php
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\{TemplateController, MessageController, CampaignController, WebhookController};
+
+// Públicas
+Route::post('/webhook/whatsapp', [WebhookController::class, 'handle']);
+Route::get('/webhook/whatsapp', [WebhookController::class, 'verify']);
+
+// Autenticadas (Sanctum)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/templates/fetch', [TemplateController::class, 'fetch']);
+    Route::get('/templates', [TemplateController::class, 'index']);
+    Route::post('/messages/send-template', [MessageController::class, 'sendTemplate']);
+    Route::post('/campaigns', [CampaignController::class, 'store']);
+    Route::get('/campaigns', [CampaignController::class, 'index']);
+    Route::get('/campaigns/{id}', [CampaignController::class, 'show']);
+});
+```
+
+### 17.2 Frontend HTML/CSS/Tailwind/JS Puro
+
+#### 17.2.1 Estrutura de Pastas
+```
+public/
+├── index.html
+├── login.html
+├── dashboard.html
+├── campaigns.html
+├── templates.html
+├── css/
+│   └── app.css (Tailwind compilado)
+├── js/
+│   ├── api.js
+│   ├── auth.js
+│   ├── components/
+│   │   ├── navbar.js
+│   │   └── table.js
+│   └── pages/
+│       ├── dashboard.js
+│       └── campaigns.js
+└── assets/
+    └── images/
+```
+
+#### 17.2.2 API Client (js/api.js)
+```javascript
+// js/api.js
+const API_BASE_URL = 'http://localhost:8000/api';
+
+class ApiClient {
+    constructor() {
+        this.token = localStorage.getItem('auth_token');
+    }
+
+    async request(method, endpoint, data = null) {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        };
+
+        if (this.token) {
+            headers['Authorization'] = `Bearer ${this.token}`;
+        }
+
+        const options = { method, headers };
+
+        if (data && method !== 'GET') {
+            options.body = JSON.stringify(data);
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Request failed');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    }
+
+    async login(email, password) {
+        const data = await this.request('POST', '/login', { email, password });
+        this.token = data.token;
+        localStorage.setItem('auth_token', data.token);
+        return data;
+    }
+
+    logout() {
+        this.token = null;
+        localStorage.removeItem('auth_token');
+        window.location.href = '/login.html';
+    }
+
+    async fetchTemplates(whatsappNumberId) {
+        return this.request('POST', '/templates/fetch', { whatsapp_number_id: whatsappNumberId });
+    }
+
+    async sendTemplateMessage(data) {
+        return this.request('POST', '/messages/send-template', data);
+    }
+
+    async createCampaign(formData) {
+        const headers = { 'Accept': 'application/json' };
+        if (this.token) {
+            headers['Authorization'] = `Bearer ${this.token}`;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/campaigns`, {
+            method: 'POST',
+            headers,
+            body: formData
+        });
+
+        if (!response.ok) throw new Error('Campaign creation failed');
+        return await response.json();
+    }
+
+    async getCampaigns() {
+        return this.request('GET', '/campaigns');
+    }
+}
+
+const api = new ApiClient();
+```
+
+#### 17.2.3 Página de Login (login.html)
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DisparoX - Login</title>
+    <link href="css/app.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex items-center justify-center px-4">
+        <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-bold text-center text-gray-900">DisparoX</h2>
+            <p class="mt-2 text-center text-gray-600">Plataforma de Automação WhatsApp</p>
+            
+            <form id="loginForm" class="mt-8 space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input id="email" type="email" required
+                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
+                    <input id="password" type="password" required
+                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <div id="errorMessage" class="hidden text-red-600 text-sm"></div>
+
+                <button type="submit"
+                    class="w-full py-2 px-4 border border-transparent rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                    Entrar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
+```
+
+#### 17.2.4 Dashboard (dashboard.html)
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DisparoX - Dashboard</title>
+    <link href="css/app.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <h1 class="text-xl font-bold text-indigo-600 flex items-center">DisparoX</h1>
+                    <div class="ml-6 flex space-x-8">
+                        <a href="/dashboard.html" class="text-gray-900 border-b-2 border-indigo-500 px-1 pt-1">Dashboard</a>
+                        <a href="/campaigns.html" class="text-gray-500 hover:text-gray-700 px-1 pt-1">Campanhas</a>
+                        <a href="/templates.html" class="text-gray-500 hover:text-gray-700 px-1 pt-1">Templates</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <button onclick="api.logout()" class="text-gray-500 hover:text-gray-700">Sair</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto py-6 px-4">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="bg-white p-5 rounded-lg shadow">
+                <h3 class="text-sm font-medium text-gray-500">Mensagens Enviadas</h3>
+                <p id="totalSent" class="text-3xl font-semibold text-gray-900 mt-2">0</p>
+            </div>
+            <div class="bg-white p-5 rounded-lg shadow">
+                <h3 class="text-sm font-medium text-gray-500">Entregues</h3>
+                <p id="totalDelivered" class="text-3xl font-semibold text-green-600 mt-2">0</p>
+            </div>
+            <div class="bg-white p-5 rounded-lg shadow">
+                <h3 class="text-sm font-medium text-gray-500">Lidas</h3>
+                <p id="totalRead" class="text-3xl font-semibold text-blue-600 mt-2">0</p>
+            </div>
+            <div class="bg-white p-5 rounded-lg shadow">
+                <h3 class="text-sm font-medium text-gray-500">Falhas</h3>
+                <p id="totalFailed" class="text-3xl font-semibold text-red-600 mt-2">0</p>
+            </div>
+        </div>
+
+        <div class="mt-8 bg-white shadow rounded-lg">
+            <div class="px-4 py-5">
+                <h3 class="text-lg font-medium text-gray-900">Campanhas Recentes</h3>
+            </div>
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enviadas</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
+                    </tr>
+                </thead>
+                <tbody id="campaignsTable" class="bg-white divide-y divide-gray-200"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/pages/dashboard.js"></script>
+</body>
+</html>
+```
+
+#### 17.2.5 Dashboard Logic (js/pages/dashboard.js)
+```javascript
+// js/pages/dashboard.js
+async function loadDashboard() {
+    try {
+        const campaigns = await api.getCampaigns();
+        
+        let totalSent = 0, totalDelivered = 0, totalRead = 0, totalFailed = 0;
+
+        campaigns.data.forEach(c => {
+            totalSent += c.sent || 0;
+            totalDelivered += c.delivered || 0;
+            totalRead += c.read || 0;
+            totalFailed += c.failed || 0;
+        });
+
+        document.getElementById('totalSent').textContent = totalSent.toLocaleString();
+        document.getElementById('totalDelivered').textContent = totalDelivered.toLocaleString();
+        document.getElementById('totalRead').textContent = totalRead.toLocaleString();
+        document.getElementById('totalFailed').textContent = totalFailed.toLocaleString();
+
+        const tbody = document.getElementById('campaignsTable');
+        tbody.innerHTML = campaigns.data.slice(0, 5).map(campaign => `
+            <tr>
+                <td class="px-6 py-4 text-sm font-medium text-gray-900">${campaign.name}</td>
+                <td class="px-6 py-4 text-sm">
+                    <span class="px-2 py-1 text-xs rounded-full ${getStatusColor(campaign.status)}">
+                        ${campaign.status}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500">${campaign.sent || 0} / ${campaign.total_items || 0}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${new Date(campaign.created_at).toLocaleDateString('pt-BR')}</td>
+            </tr>
+        `).join('');
+
+    } catch (error) {
+        console.error('Failed to load dashboard:', error);
+    }
+}
+
+function getStatusColor(status) {
+    const colors = {
+        'pending': 'bg-yellow-100 text-yellow-800',
+        'processing': 'bg-blue-100 text-blue-800',
+        'completed': 'bg-green-100 text-green-800',
+        'failed': 'bg-red-100 text-red-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+}
+
+document.addEventListener('DOMContentLoaded', loadDashboard);
+```
+
+### 17.3 Considerações de Implementação
+
+#### 17.3.1 Tailwind CSS Setup
+```bash
+npm install -D tailwindcss
+npx tailwindcss init
+
+# tailwind.config.js
+module.exports = {
+  content: ["./public/**/*.{html,js}"],
+  theme: { extend: {} },
+  plugins: [],
+}
+
+# Compilar
+npx tailwindcss -i ./src/input.css -o ./public/css/app.css --watch
+```
+
+#### 17.3.2 Laravel Queue
+```bash
+# .env
+QUEUE_CONNECTION=database
+
+php artisan queue:table
+php artisan migrate
+php artisan queue:work --tries=3
+```
+
+#### 17.3.3 Webhook Security
+```php
+// app/Http/Controllers/Api/WebhookController.php
+public function handle(Request $request)
+{
+    $signature = $request->header('X-Hub-Signature-256');
+    $payload = $request->getContent();
+    $expected = 'sha256=' . hash_hmac('sha256', $payload, env('WHATSAPP_APP_SECRET'));
+    
+    if (!hash_equals($expected, $signature)) {
+        abort(403, 'Invalid signature');
+    }
+    
+    // Processar webhook...
+}
+```
+
+---
+
+## 18. CONTATOS E SUPORTE
 
 **Documentação Oficial**:
 - WhatsApp Business API: https://developers.facebook.com/docs/whatsapp
