@@ -17,6 +17,7 @@ import { Loader2, Upload, Send, FileText, ChevronRight, CheckCircle2, AlertCircl
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { TemplateMappingDialog } from "@/components/TemplateMappingDialog";
+import { CampaignMonitor } from "@/components/CampaignMonitor";
 
 export default function DisparoCSV() {
   const { toast } = useToast();
@@ -26,7 +27,8 @@ export default function DisparoCSV() {
   const [headers, setHeaders] = useState<string[]>([]);
   const [selectedNumber, setSelectedNumber] = useState("");
   const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
-  const [rate, setRate] = useState(40);
+  const [rate, setRate] = useState(80);
+  const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
   const [campaignName, setCampaignName] = useState("");
   const [mappingDialogTemplate, setMappingDialogTemplate] = useState<any>(null);
   const [validationResults, setValidationResults] = useState<{
@@ -339,17 +341,12 @@ export default function DisparoCSV() {
       return campaign;
     },
     onSuccess: (campaign) => {
+      setActiveCampaignId(campaign.id);
       toast({
         title: "🚀 Campanha iniciada!",
-        description: `${campaign.name} está sendo processada.`,
+        description: `${campaign.name} está sendo processada com ${rate} msg/s.`,
       });
-      setStep(1);
-      setCsvFile(null);
-      setCsvData([]);
-      setHeaders([]);
-      setSelectedNumber("");
-      setSelectedTemplates([]);
-      setCampaignName("");
+      setStep(4); // Ir para monitoramento
     },
     onError: (error: any) => {
       toast({
@@ -606,18 +603,32 @@ export default function DisparoCSV() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="rate">Taxa de Envio (msg/segundo)</Label>
-              <Input
-                id="rate"
-                type="number"
-                min="1"
-                max="80"
-                value={rate}
-                onChange={(e) => setRate(Number(e.target.value))}
-              />
-              <p className="text-xs text-muted-foreground">
-                ⚡ Recomendado: 40 msg/s • Máximo: 80 msg/s
-              </p>
+              <Label htmlFor="rate">Taxa de Envio (mensagens por segundo)</Label>
+              <div className="flex items-center gap-4">
+                <Input
+                  id="rate"
+                  type="number"
+                  min="1"
+                  max="810"
+                  value={rate}
+                  onChange={(e) => setRate(Math.min(810, Math.max(1, Number(e.target.value))))}
+                  className="flex-1"
+                />
+                <div className="text-sm font-medium whitespace-nowrap">
+                  {rate} msg/s
+                </div>
+              </div>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <p>• <span className="font-medium text-yellow-600">Conservador:</span> 20-80 msg/s</p>
+                <p>• <span className="font-medium text-blue-600">Moderado:</span> 80-200 msg/s</p>
+                <p>• <span className="font-medium text-orange-600">Agressivo:</span> 200-400 msg/s</p>
+                <p>• <span className="font-medium text-red-600">Máximo:</span> 400-810 msg/s</p>
+              </div>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950 p-3">
+                <p className="text-xs text-blue-800 dark:text-blue-200">
+                  💡 <strong>Throughput:</strong> {rate} msg/s = <strong>{(rate * 60).toLocaleString()}</strong> por minuto = <strong>{(rate * 3600).toLocaleString()}</strong> por hora
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-2">
@@ -799,6 +810,38 @@ export default function DisparoCSV() {
                     Iniciar Campanha
                   </>
                 )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 4: Monitoramento */}
+      {step === 4 && activeCampaignId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Monitoramento da Campanha</CardTitle>
+            <CardDescription>
+              Acompanhe o progresso em tempo real
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CampaignMonitor campaignId={activeCampaignId} />
+            <div className="mt-6 flex justify-center">
+              <Button
+                onClick={() => {
+                  setStep(1);
+                  setCsvFile(null);
+                  setCsvData([]);
+                  setHeaders([]);
+                  setValidationResults(null);
+                  setSelectedTemplates([]);
+                  setCampaignName("");
+                  setActiveCampaignId(null);
+                }}
+                variant="outline"
+              >
+                Nova Campanha
               </Button>
             </div>
           </CardContent>
