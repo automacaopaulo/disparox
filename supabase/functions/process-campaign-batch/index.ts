@@ -5,12 +5,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// 🎯 CONFIGURAÇÃO CONSERVADORA PARA ESTABILIDADE
-const BATCH_SIZE = 50; // Processar 50 por vez
-const MESSAGES_PER_SECOND = 20; // Taxa segura: 20 msg/s
-const DELAY_BETWEEN_MESSAGES_MS = 1000 / MESSAGES_PER_SECOND; // ~50ms entre mensagens
+// 🚀 SISTEMA DE ALTA PERFORMANCE - Até 810 msg/s
+const MAX_RATE_LIMIT = 810; // Limite do Meta WhatsApp
+const BATCH_SIZE = 100; // Processar 100 por vez
 const MAX_RETRIES = 3;
-const RETRY_DELAYS = [3000, 10000, 30000]; // 3s, 10s, 30s
+const RETRY_DELAYS = [2000, 5000, 10000];
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
 const RETRYABLE_ERRORS = [
@@ -69,12 +68,12 @@ async function sendMessage(
         return {
           success: false,
           errorCode: '24H_WINDOW',
-          errorMessage: 'Fora da janela de 24 horas para template',
+          errorMessage: 'Fora da janela de 24 horas',
         };
       }
     }
 
-    // Construir componentes da mensagem
+    // Construir componentes
     const components: any[] = [];
     const structure = template.structure || {};
     const params = item.params || {};
@@ -151,9 +150,7 @@ async function sendMessage(
       const errorCode = result.error?.code?.toString() || 'UNKNOWN';
       const errorMessage = result.error?.message || 'Erro desconhecido';
 
-      // Verificar se deve retentar
       if (RETRYABLE_ERRORS.includes(errorCode) && retryCount < MAX_RETRIES) {
-        console.log(`⏳ Retry ${retryCount + 1}/${MAX_RETRIES} para ${item.msisdn} (código: ${errorCode})`);
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[retryCount]));
         return sendMessage(supabase, item, campaign, template, whatsappNumber, retryCount + 1);
       }
@@ -161,7 +158,7 @@ async function sendMessage(
       return { success: false, errorCode, errorMessage };
     }
 
-    // Atualizar last_message_sent_at no contato
+    // Atualizar contato
     await supabase
       .from('contacts')
       .upsert({
@@ -171,13 +168,36 @@ async function sendMessage(
 
     return { success: true };
   } catch (error: any) {
-    console.error(`❌ Erro ao enviar para ${item.msisdn}:`, error.message);
     return {
       success: false,
       errorCode: 'NETWORK_ERROR',
       errorMessage: error.message,
     };
   }
+}
+
+// 🎯 Função para processar com controle de taxa preciso
+async function processWithRateLimit(
+  items: any[],
+  messagesPerSecond: number,
+  processor: (item: any) => Promise<any>
+) {
+  const delayMs = 1000 / messagesPerSecond;
+  const results = [];
+  
+  for (const item of items) {
+    const startTime = Date.now();
+    const result = await processor(item);
+    results.push(result);
+    
+    const elapsed = Date.now() - startTime;
+    const remainingDelay = Math.max(0, delayMs - elapsed);
+    if (remainingDelay > 0) {
+      await new Promise(resolve => setTimeout(resolve, remainingDelay));
+    }
+  }
+  
+  return results;
 }
 
 Deno.serve(async (req) => {
@@ -196,7 +216,8 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log(`📦 Processando batch ${batchNumber || 'inicial'} da campanha ${campaignId}`);
+    const startTime = Date.now();
+    console.log(`📦 Batch ${batchNumber} iniciado às ${new Date().toISOString()}`);
 
     // Buscar campanha
     const { data: campaign, error: campaignError } = await supabase
@@ -208,6 +229,9 @@ Deno.serve(async (req) => {
     if (campaignError || !campaign) {
       throw new Error('Campanha não encontrada');
     }
+
+    const configuredRate = Math.min(campaign.processing_rate || 80, MAX_RATE_LIMIT);
+    console.log(`⚡ Taxa: ${configuredRate} msg/s`);
 
     // Buscar template
     const { data: template } = await supabase
@@ -221,7 +245,7 @@ Deno.serve(async (req) => {
       throw new Error('Template não encontrado');
     }
 
-    // Buscar próximos items pending (BATCH_SIZE por vez)
+    // Buscar próximo batch
     const { data: items, error: itemsError } = await supabase
       .from('campaign_items')
       .select('*')
@@ -235,11 +259,13 @@ Deno.serve(async (req) => {
     }
 
     if (!items || items.length === 0) {
-      // Todos processados - finalizar campanha
-      console.log('✅ Todos os items processados');
+      console.log('✅ Campanha finalizada');
       await supabase
         .from('campaigns')
-        .update({ status: 'completed' })
+        .update({ 
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', campaignId);
 
       return new Response(
@@ -248,21 +274,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`📊 Processando ${items.length} items`);
+    console.log(`📊 Processando ${items.length} items do batch ${batchNumber}`);
 
     let sent = 0;
     let failed = 0;
     const errorSummary: Record<string, number> = {};
 
-    // Processar sequencialmente com delay entre mensagens
-    for (const item of items) {
-      const result = await sendMessage(
-        supabase,
-        item,
-        campaign,
-        template,
-        campaign.whatsapp_numbers
-      );
+    // Processar com controle de taxa
+    await processWithRateLimit(items, configuredRate, async (item) => {
+      const result = await sendMessage(supabase, item, campaign, template, campaign.whatsapp_numbers);
 
       if (result.success) {
         await supabase
@@ -291,12 +311,9 @@ Deno.serve(async (req) => {
           errorSummary[result.errorCode] = (errorSummary[result.errorCode] || 0) + 1;
         }
       }
+    });
 
-      // Delay entre mensagens para respeitar rate limit
-      await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_MESSAGES_MS));
-    }
-
-    // Atualizar contadores da campanha
+    // Atualizar estatísticas
     const { data: stats } = await supabase
       .from('campaign_items')
       .select('status')
@@ -311,12 +328,15 @@ Deno.serve(async (req) => {
         sent: sentCount,
         failed: failedCount,
         error_summary: errorSummary,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', campaignId);
 
-    console.log(`✅ Batch concluído: ${sent} enviados, ${failed} falhas`);
+    const elapsedSeconds = (Date.now() - startTime) / 1000;
+    const actualRate = items.length / elapsedSeconds;
+    console.log(`✅ Batch ${batchNumber}: ${sent} enviados, ${failed} falhas (${actualRate.toFixed(2)} msg/s)`);
 
-    // Chamar próximo batch se ainda houver items pending
+    // Verificar se há mais items
     const { count: pendingCount } = await supabase
       .from('campaign_items')
       .select('*', { count: 'exact', head: true })
@@ -324,9 +344,8 @@ Deno.serve(async (req) => {
       .eq('status', 'pending');
 
     if (pendingCount && pendingCount > 0) {
-      console.log(`🔄 ${pendingCount} items restantes, agendando próximo batch...`);
+      console.log(`🔄 ${pendingCount} restantes`);
       
-      // Chamar recursivamente (com pequeno delay)
       setTimeout(async () => {
         try {
           await fetch(`${supabaseUrl}/functions/v1/process-campaign-batch`, {
@@ -343,7 +362,7 @@ Deno.serve(async (req) => {
         } catch (error) {
           console.error('Erro ao chamar próximo batch:', error);
         }
-      }, 2000); // 2s de delay entre batches
+      }, 100);
     }
 
     return new Response(
@@ -353,6 +372,8 @@ Deno.serve(async (req) => {
         sent,
         failed,
         pendingRemaining: pendingCount || 0,
+        actualRate: actualRate.toFixed(2),
+        configuredRate,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
