@@ -1,8 +1,7 @@
 import { ReactNode } from "react";
 import { SimpleSidebar } from "./SimpleSidebar";
 import { Button } from "./ui/button";
-import { LogOut, Sun, Moon } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 
 interface SimpleLayoutProps {
@@ -10,7 +9,6 @@ interface SimpleLayoutProps {
 }
 
 export function SimpleLayout({ children }: SimpleLayoutProps) {
-  const { signOut } = useAuth();
   const { theme, setTheme } = useTheme();
 
   return (
@@ -22,20 +20,13 @@ export function SimpleLayout({ children }: SimpleLayoutProps) {
         <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 h-16 flex items-center justify-between px-6">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">DisparoX</h2>
           
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
-            
-            <Button variant="ghost" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
         </header>
 
         {/* Main Content */}
